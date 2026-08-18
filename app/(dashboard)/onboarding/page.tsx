@@ -8,16 +8,25 @@ import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
+import { useGoals } from "@/hooks/useGoals"
 
 export default function OnboardingPage() {
   const router = useRouter()
+  const { updateGoals, isSaving } = useGoals()
   const [step, setStep] = useState(1)
   const [monthlyGoal, setMonthlyGoal] = useState("25000")
   const [annualGoal, setAnnualGoal] = useState("220000")
 
   function finish() {
-    localStorage.setItem("centrai_onboarding_done", "true")
-    router.push("/dashboard")
+    updateGoals(
+      { monthlyGoal: Number(monthlyGoal), annualGoal: Number(annualGoal) },
+      {
+        onSettled: () => {
+          localStorage.setItem("centrai_onboarding_done", "true")
+          router.push("/dashboard")
+        },
+      }
+    )
   }
 
   return (
@@ -74,8 +83,8 @@ export default function OnboardingPage() {
               <p className="text-sm text-muted-foreground">
                 Ton tableau de bord est configuré. Tu peux maintenant commencer à gérer tes leads et tes transactions.
               </p>
-              <Button onClick={finish} className="bg-[#C8952A] text-white hover:bg-[#b3821f]">
-                Accéder au tableau de bord
+              <Button onClick={finish} disabled={isSaving} className="bg-[#C8952A] text-white hover:bg-[#b3821f]">
+                {isSaving ? "Enregistrement..." : "Accéder au tableau de bord"}
               </Button>
             </div>
           )}
