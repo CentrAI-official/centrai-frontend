@@ -1,18 +1,91 @@
 "use client"
 
+import { useState } from "react"
 import { format } from "date-fns"
 import { fr } from "date-fns/locale"
-import { BedDouble, Bath, CalendarDays } from "lucide-react"
+import { BedDouble, Bath, CalendarDays, Percent, Plus } from "lucide-react"
 import { PageHeader } from "@/components/ui/PageHeader"
 import { Card, CardContent } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { StatusBadge } from "@/components/ui/StatusBadge"
 import { Skeleton } from "@/components/ui/skeleton"
-import { useProperties } from "@/hooks/useProperties"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { useProperties, useCreateProperty, useUpdateProperty } from "@/hooks/useProperties"
 import { formatCurrency, parseLocalDate } from "@/lib/utils"
+import type { Property } from "@/lib/mocks"
+
+const emptyForm = {
+  address: "",
+  type: "Maison",
+  price: "",
+  bedrooms: "",
+  bathrooms: "",
+  status: "active" as "active" | "sold",
+  commissionPercent: "",
+}
 
 export default function PropertiesPage() {
   const { data: properties, isLoading } = useProperties()
+  const createProperty = useCreateProperty()
+  const updateProperty = useUpdateProperty()
+
+  const [dialogOpen, setDialogOpen] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [form, setForm] = useState(emptyForm)
+
+  function openCreate() {
+    setEditingId(null)
+    setForm(emptyForm)
+    setDialogOpen(true)
+  }
+
+  function openEdit(property: Property) {
+    setEditingId(property.id)
+    setForm({
+      address: property.address,
+      type: property.type,
+      price: String(property.price),
+      bedrooms: String(property.bedrooms),
+      bathrooms: String(property.bathrooms),
+      status: property.status,
+      commissionPercent: property.commissionPercent != null ? String(property.commissionPercent) : "",
+    })
+    setDialogOpen(true)
+  }
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    const input = {
+      address: form.address,
+      type: form.type,
+      price: Number(form.price),
+      bedrooms: Number(form.bedrooms || 0),
+      bathrooms: Number(form.bathrooms || 0),
+      status: form.status,
+      commissionPercent: form.commissionPercent === "" ? undefined : Number(form.commissionPercent),
+    }
+    if (editingId) {
+      updateProperty.mutate({ id: editingId, ...input }, { onSuccess: () => setDialogOpen(false) })
+    } else {
+      createProperty.mutate(input, { onSuccess: () => setDialogOpen(false) })
+    }
+  }
 
   if (isLoading) {
     return (
@@ -33,7 +106,12 @@ export default function PropertiesPage() {
 
   return (
     <div>
-      <PageHeader title="Propriétés" subtitle={`${propertyList.length} propriété(s)`} />
+      <div className="mb-4 flex items-center justify-between">
+        <PageHeader title="Propriétés" subtitle={`${propertyList.length} propriété(s)`} />
+        <Button onClick={openCreate} className="bg-[#1A3A5C] hover:bg-[#142d47]">
+          <Plus className="mr-1 h-4 w-4" /> Nouvelle propriété
+        </Button>
+      </div>
 
       <Tabs defaultValue="active">
         <TabsList>
@@ -44,7 +122,11 @@ export default function PropertiesPage() {
         <TabsContent value="active" className="mt-4">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {activeProperties.map((property) => (
-              <Card key={property.id}>
+              <Card
+                key={property.id}
+                className="cursor-pointer transition-shadow hover:shadow-md"
+                onClick={() => openEdit(property)}
+              >
                 <CardContent className="flex flex-col gap-3">
                   <div className="flex items-start justify-between gap-2">
                     <p className="font-medium text-[#1A3A5C]">{property.address}</p>
@@ -64,16 +146,28 @@ export default function PropertiesPage() {
                       {format(parseLocalDate(property.listedDate), "d MMM yyyy", { locale: fr })}
                     </span>
                   </div>
+                  {property.commissionPercent != null && (
+                    <span className="flex items-center gap-1 text-xs font-medium text-[#C8952A]">
+                      <Percent className="h-3.5 w-3.5" /> {property.commissionPercent}% de commission
+                    </span>
+                  )}
                 </CardContent>
               </Card>
             ))}
+            {activeProperties.length === 0 && (
+              <p className="text-sm text-muted-foreground">Aucune propriété active.</p>
+            )}
           </div>
         </TabsContent>
 
         <TabsContent value="sold" className="mt-4">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {soldProperties.map((property) => (
-              <Card key={property.id}>
+              <Card
+                key={property.id}
+                className="cursor-pointer transition-shadow hover:shadow-md"
+                onClick={() => openEdit(property)}
+              >
                 <CardContent className="flex flex-col gap-3">
                   <div className="flex items-start justify-between gap-2">
                     <p className="font-medium text-[#1A3A5C]">{property.address}</p>
@@ -94,12 +188,115 @@ export default function PropertiesPage() {
                       <Bath className="h-3.5 w-3.5" /> {property.bathrooms}
                     </span>
                   </div>
+                  {property.commissionPercent != null && (
+                    <span className="flex items-center gap-1 text-xs font-medium text-[#C8952A]">
+                      <Percent className="h-3.5 w-3.5" /> {property.commissionPercent}% de commission
+                    </span>
+                  )}
                 </CardContent>
               </Card>
             ))}
+            {soldProperties.length === 0 && (
+              <p className="text-sm text-muted-foreground">Aucune propriété vendue.</p>
+            )}
           </div>
         </TabsContent>
       </Tabs>
+
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-[#1A3A5C]">
+              {editingId ? "Modifier la propriété" : "Nouvelle propriété"}
+            </DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="address">Adresse</Label>
+              <Input
+                id="address"
+                required
+                value={form.address}
+                onChange={(e) => setForm({ ...form, address: e.target.value })}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="type">Type</Label>
+                <Input
+                  id="type"
+                  value={form.type}
+                  onChange={(e) => setForm({ ...form, type: e.target.value })}
+                />
+              </div>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="price">Prix ($)</Label>
+                <Input
+                  id="price"
+                  type="number"
+                  required
+                  value={form.price}
+                  onChange={(e) => setForm({ ...form, price: e.target.value })}
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-4">
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="bedrooms">Chambres</Label>
+                <Input
+                  id="bedrooms"
+                  type="number"
+                  value={form.bedrooms}
+                  onChange={(e) => setForm({ ...form, bedrooms: e.target.value })}
+                />
+              </div>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="bathrooms">S. de bain</Label>
+                <Input
+                  id="bathrooms"
+                  type="number"
+                  value={form.bathrooms}
+                  onChange={(e) => setForm({ ...form, bathrooms: e.target.value })}
+                />
+              </div>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="commissionPercent">Commission (%)</Label>
+                <Input
+                  id="commissionPercent"
+                  type="number"
+                  step="0.1"
+                  value={form.commissionPercent}
+                  onChange={(e) => setForm({ ...form, commissionPercent: e.target.value })}
+                />
+              </div>
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label>Statut</Label>
+              <Select
+                value={form.status}
+                onValueChange={(v) => setForm({ ...form, status: v as "active" | "sold" })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="sold">Vendue</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <DialogFooter>
+              <Button
+                type="submit"
+                disabled={createProperty.isPending || updateProperty.isPending}
+                className="bg-[#1A3A5C] hover:bg-[#142d47]"
+              >
+                {editingId ? "Enregistrer" : "Créer"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

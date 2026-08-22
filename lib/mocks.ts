@@ -389,6 +389,7 @@ export interface Property {
   status: "active" | "sold"
   soldPrice?: number
   commission?: number
+  commissionPercent?: number
   bedrooms: number
   bathrooms: number
 }
