@@ -31,7 +31,7 @@ function mapApiProperty(property: PropertyApiResponse): Property {
     address: property.address ?? "",
     type: property.property_type ?? "",
     price: Number(property.price ?? 0),
-    listedDate: property.last_seen_at ?? property.created_at,
+    listedDate: (property.last_seen_at ?? property.created_at).slice(0, 10),
     status: property.status === "sold" ? "sold" : "active",
     bedrooms: Number(property.bedrooms ?? 0),
     bathrooms: Number(property.bathrooms ?? 0),
