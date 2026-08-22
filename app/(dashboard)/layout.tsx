@@ -138,7 +138,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
       )}
 
-      <div className="flex min-h-screen min-w-0 flex-1 flex-col lg:ml-[240px]">
+      <div className="flex min-h-screen min-w-0 flex-1 flex-col">
         <header className="flex items-center justify-between border-b border-border bg-white px-4 py-3 lg:hidden">
           <span className="text-lg font-bold text-[#1A3A5C]">CENTRAI</span>
           <button onClick={() => setMobileOpen(true)} aria-label="Ouvrir le menu">
