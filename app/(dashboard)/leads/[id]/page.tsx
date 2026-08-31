@@ -4,12 +4,18 @@ import Link from "next/link"
 import { useParams } from "next/navigation"
 import { format } from "date-fns"
 import { fr } from "date-fns/locale"
-import { ChevronRight, Mail, Phone, Wallet, Tag } from "lucide-react"
+import { ChevronRight, Mail, Phone, Wallet, Tag, CalendarClock, Home } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { StatusBadge, type Status } from "@/components/ui/StatusBadge"
 import { useLead } from "@/hooks/useLeads"
 import type { LeadSource } from "@/lib/mocks"
+
+function formatBoolean(value: boolean | null | undefined) {
+  if (value === true) return "Oui"
+  if (value === false) return "Non"
+  return null
+}
 
 const sourceLabels: Record<LeadSource, string> = {
   facebook: "Facebook",
@@ -78,6 +84,98 @@ export default function LeadDetailPage() {
             </div>
           </CardContent>
         </Card>
+
+        {(lead.buyerQualification || lead.sellerQualification) && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg text-[#1A3A5C]">Détails du projet</CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-3 text-sm">
+              {lead.projectType === "seller" ? (
+                <>
+                  <div className="flex items-center gap-2 text-foreground/80">
+                    <Home className="h-4 w-4 text-muted-foreground" /> Vente
+                  </div>
+                  {lead.sellerQualification?.villeOuAdresse && (
+                    <div className="text-foreground/80">
+                      <span className="text-muted-foreground">Adresse ou ville : </span>
+                      {lead.sellerQualification.villeOuAdresse}
+                    </div>
+                  )}
+                  {lead.sellerQualification?.typeDePropriete && (
+                    <div className="text-foreground/80">
+                      <span className="text-muted-foreground">Type de propriété : </span>
+                      {lead.sellerQualification.typeDePropriete}
+                    </div>
+                  )}
+                  {lead.sellerQualification?.quandVendre && (
+                    <div className="text-foreground/80">
+                      <span className="text-muted-foreground">Délai de vente : </span>
+                      {lead.sellerQualification.quandVendre}
+                    </div>
+                  )}
+                  {formatBoolean(lead.sellerQualification?.dejaUnCourtier) && (
+                    <div className="text-foreground/80">
+                      <span className="text-muted-foreground">Déjà un courtier : </span>
+                      {formatBoolean(lead.sellerQualification?.dejaUnCourtier)}
+                    </div>
+                  )}
+                </>
+              ) : (
+                <>
+                  <div className="flex items-center gap-2 text-foreground/80">
+                    <Home className="h-4 w-4 text-muted-foreground" /> Achat
+                  </div>
+                  {lead.buyerQualification?.villeOuSecteurRecherche && (
+                    <div className="text-foreground/80">
+                      <span className="text-muted-foreground">Secteur recherché : </span>
+                      {lead.buyerQualification.villeOuSecteurRecherche}
+                    </div>
+                  )}
+                  {lead.buyerQualification?.typeDePropriete && (
+                    <div className="text-foreground/80">
+                      <span className="text-muted-foreground">Type de propriété : </span>
+                      {lead.buyerQualification.typeDePropriete}
+                    </div>
+                  )}
+                  {lead.buyerQualification?.delaiAchat && (
+                    <div className="text-foreground/80">
+                      <span className="text-muted-foreground">Délai d&apos;achat : </span>
+                      {lead.buyerQualification.delaiAchat}
+                    </div>
+                  )}
+                  {formatBoolean(lead.buyerQualification?.proprieteAVendre) && (
+                    <div className="text-foreground/80">
+                      <span className="text-muted-foreground">Propriété à vendre : </span>
+                      {formatBoolean(lead.buyerQualification?.proprieteAVendre)}
+                    </div>
+                  )}
+                </>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {lead.appointments && lead.appointments.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg text-[#1A3A5C]">Rendez-vous</CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-3 text-sm">
+              {lead.appointments.map((appointment) => (
+                <div key={appointment.id} className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 text-foreground/80">
+                    <CalendarClock className="h-4 w-4 text-muted-foreground" />
+                    {format(new Date(appointment.startTimeUtc), "d MMM yyyy, HH:mm", { locale: fr })}
+                  </div>
+                  <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs capitalize text-gray-700">
+                    {appointment.status}
+                  </span>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        )}
 
         <Card>
           <CardHeader>

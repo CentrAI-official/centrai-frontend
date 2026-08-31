@@ -14,6 +14,27 @@ interface MessageApiResponse {
   created_at: string
 }
 
+interface BuyerQualificationApiResponse {
+  ville_ou_secteur_recherche: string | null
+  type_de_propriete: string | null
+  delai_achat: string | null
+  propriete_a_vendre: boolean | null
+}
+
+interface SellerQualificationApiResponse {
+  quand_vendre: string | null
+  type_de_propriete: string | null
+  ville_ou_adresse: string | null
+  deja_un_courtier: boolean | null
+}
+
+interface AppointmentApiResponse {
+  id: string
+  start_time_utc: string
+  end_time_utc: string
+  status: string
+}
+
 interface ContactApiResponse {
   id: string
   full_name: string | null
@@ -25,6 +46,9 @@ interface ContactApiResponse {
   created_at: string
   updated_at: string
   messages?: MessageApiResponse[]
+  buyer_qualification?: BuyerQualificationApiResponse
+  seller_qualification?: SellerQualificationApiResponse
+  appointments?: AppointmentApiResponse[]
 }
 
 function mapMessageToConversationEntry(message: MessageApiResponse): ConversationEntry {
@@ -49,6 +73,9 @@ function mapContactToLead(contact: ContactApiResponse): Lead {
   const source = VALID_SOURCES.includes(contact.source as LeadSource)
     ? (contact.source as LeadSource)
     : "email"
+  const projectType = contact.project_type === "buyer" || contact.project_type === "seller"
+    ? contact.project_type
+    : null
 
   return {
     id: contact.id,
@@ -62,6 +89,29 @@ function mapContactToLead(contact: ContactApiResponse): Lead {
     lastContact: contact.updated_at,
     createdAt: contact.created_at,
     conversations: (contact.messages ?? []).map(mapMessageToConversationEntry),
+    projectType,
+    buyerQualification: contact.buyer_qualification
+      ? {
+          villeOuSecteurRecherche: contact.buyer_qualification.ville_ou_secteur_recherche,
+          typeDePropriete: contact.buyer_qualification.type_de_propriete,
+          delaiAchat: contact.buyer_qualification.delai_achat,
+          proprieteAVendre: contact.buyer_qualification.propriete_a_vendre,
+        }
+      : undefined,
+    sellerQualification: contact.seller_qualification
+      ? {
+          quandVendre: contact.seller_qualification.quand_vendre,
+          typeDePropriete: contact.seller_qualification.type_de_propriete,
+          villeOuAdresse: contact.seller_qualification.ville_ou_adresse,
+          dejaUnCourtier: contact.seller_qualification.deja_un_courtier,
+        }
+      : undefined,
+    appointments: (contact.appointments ?? []).map((appointment) => ({
+      id: appointment.id,
+      startTimeUtc: appointment.start_time_utc,
+      endTimeUtc: appointment.end_time_utc,
+      status: appointment.status,
+    })),
   }
 }
 

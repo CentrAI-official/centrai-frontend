@@ -9,6 +9,27 @@ export interface ConversationEntry {
   message: string
 }
 
+export interface BuyerQualification {
+  villeOuSecteurRecherche: string | null
+  typeDePropriete: string | null
+  delaiAchat: string | null
+  proprieteAVendre: boolean | null
+}
+
+export interface SellerQualification {
+  quandVendre: string | null
+  typeDePropriete: string | null
+  villeOuAdresse: string | null
+  dejaUnCourtier: boolean | null
+}
+
+export interface LeadAppointment {
+  id: string
+  startTimeUtc: string
+  endTimeUtc: string
+  status: string
+}
+
 export interface Lead {
   id: string
   name: string
@@ -21,6 +42,10 @@ export interface Lead {
   lastContact: string
   createdAt: string
   conversations: ConversationEntry[]
+  projectType?: "buyer" | "seller" | null
+  buyerQualification?: BuyerQualification
+  sellerQualification?: SellerQualification
+  appointments?: LeadAppointment[]
 }
 
 export const mockLeads: Lead[] = [
