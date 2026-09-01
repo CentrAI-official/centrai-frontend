@@ -417,6 +417,7 @@ export interface Property {
   commissionPercent?: number
   bedrooms: number
   bathrooms: number
+  url?: string
 }
 
 export const mockProperties: Property[] = [

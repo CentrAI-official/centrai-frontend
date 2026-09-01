@@ -13,6 +13,7 @@ interface PropertyApiResponse {
   commission_percent: string | number | null
   last_seen_at: string | null
   created_at: string
+  url: string | null
 }
 
 export interface PropertyFormInput {
@@ -23,6 +24,7 @@ export interface PropertyFormInput {
   bathrooms: number
   status: "active" | "sold"
   commissionPercent?: number
+  url?: string
 }
 
 function mapApiProperty(property: PropertyApiResponse): Property {
@@ -36,6 +38,7 @@ function mapApiProperty(property: PropertyApiResponse): Property {
     bedrooms: Number(property.bedrooms ?? 0),
     bathrooms: Number(property.bathrooms ?? 0),
     commissionPercent: property.commission_percent != null ? Number(property.commission_percent) : undefined,
+    url: property.url ?? undefined,
   }
 }
 

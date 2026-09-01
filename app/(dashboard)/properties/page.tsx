@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { format } from "date-fns"
 import { fr } from "date-fns/locale"
-import { BedDouble, Bath, CalendarDays, Percent, Plus } from "lucide-react"
+import { BedDouble, Bath, CalendarDays, Percent, Plus, Link as LinkIcon } from "lucide-react"
 import { PageHeader } from "@/components/ui/PageHeader"
 import { Card, CardContent } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -38,6 +38,7 @@ const emptyForm = {
   bathrooms: "",
   status: "active" as "active" | "sold",
   commissionPercent: "",
+  url: "",
 }
 
 export default function PropertiesPage() {
@@ -65,6 +66,7 @@ export default function PropertiesPage() {
       bathrooms: String(property.bathrooms),
       status: property.status,
       commissionPercent: property.commissionPercent != null ? String(property.commissionPercent) : "",
+      url: property.url ?? "",
     })
     setDialogOpen(true)
   }
@@ -79,6 +81,7 @@ export default function PropertiesPage() {
       bathrooms: Number(form.bathrooms || 0),
       status: form.status,
       commissionPercent: form.commissionPercent === "" ? undefined : Number(form.commissionPercent),
+      url: form.url.trim() === "" ? undefined : form.url.trim(),
     }
     if (editingId) {
       updateProperty.mutate({ id: editingId, ...input }, { onSuccess: () => setDialogOpen(false) })
@@ -151,6 +154,17 @@ export default function PropertiesPage() {
                       <Percent className="h-3.5 w-3.5" /> {property.commissionPercent}% de commission
                     </span>
                   )}
+                  {property.url && (
+                    <a
+                      href={property.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      className="flex items-center gap-1 text-xs font-medium text-[#1A3A5C] hover:underline"
+                    >
+                      <LinkIcon className="h-3.5 w-3.5" /> Voir l&apos;annonce
+                    </a>
+                  )}
                 </CardContent>
               </Card>
             ))}
@@ -193,6 +207,17 @@ export default function PropertiesPage() {
                       <Percent className="h-3.5 w-3.5" /> {property.commissionPercent}% de commission
                     </span>
                   )}
+                  {property.url && (
+                    <a
+                      href={property.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      className="flex items-center gap-1 text-xs font-medium text-[#1A3A5C] hover:underline"
+                    >
+                      <LinkIcon className="h-3.5 w-3.5" /> Voir l&apos;annonce
+                    </a>
+                  )}
                 </CardContent>
               </Card>
             ))}
@@ -218,6 +243,16 @@ export default function PropertiesPage() {
                 required
                 value={form.address}
                 onChange={(e) => setForm({ ...form, address: e.target.value })}
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="url">Lien de la propriété</Label>
+              <Input
+                id="url"
+                type="url"
+                placeholder="https://www.centris.ca/..."
+                value={form.url}
+                onChange={(e) => setForm({ ...form, url: e.target.value })}
               />
             </div>
             <div className="grid grid-cols-2 gap-4">
