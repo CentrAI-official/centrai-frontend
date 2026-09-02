@@ -1,10 +1,11 @@
 "use client"
 
+import { useState } from "react"
 import Link from "next/link"
 import { useParams } from "next/navigation"
 import { format } from "date-fns"
 import { fr } from "date-fns/locale"
-import { ChevronRight, Mail, Phone, Wallet, Tag, CalendarClock, Home } from "lucide-react"
+import { ChevronRight, ChevronDown, Mail, Phone, Wallet, Tag, CalendarClock, Home, Sparkles } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { StatusBadge, type Status } from "@/components/ui/StatusBadge"
@@ -33,6 +34,7 @@ const senderLabels: Record<string, { label: string; className: string }> = {
 export default function LeadDetailPage() {
   const params = useParams<{ id: string }>()
   const { data: lead, isLoading } = useLead(params.id)
+  const [showFullHistory, setShowFullHistory] = useState(false)
 
   if (isLoading) {
     return (
@@ -177,31 +179,58 @@ export default function LeadDetailPage() {
           </Card>
         )}
 
+        {lead.conversationSummary && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg text-[#1A3A5C]">
+                <Sparkles className="h-4 w-4 text-[#C8952A]" /> Résumé de la conversation
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="whitespace-pre-line text-sm text-foreground/80">{lead.conversationSummary}</p>
+            </CardContent>
+          </Card>
+        )}
+
         <Card>
-          <CardHeader>
-            <CardTitle className="text-lg text-[#1A3A5C]">Historique des conversations</CardTitle>
+          <CardHeader
+            className={lead.conversationSummary ? "cursor-pointer select-none" : undefined}
+            onClick={lead.conversationSummary ? () => setShowFullHistory((prev) => !prev) : undefined}
+          >
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-lg text-[#1A3A5C]">Historique des conversations</CardTitle>
+              {lead.conversationSummary && (
+                <ChevronDown
+                  className={`h-4 w-4 text-muted-foreground transition-transform ${
+                    showFullHistory ? "rotate-180" : ""
+                  }`}
+                />
+              )}
+            </div>
           </CardHeader>
-          <CardContent>
-            <ol className="flex flex-col gap-4 border-l border-border pl-4">
-              {lead.conversations.map((entry) => {
-                const sender = senderLabels[entry.sender]
-                return (
-                  <li key={entry.id} className="relative">
-                    <span className="absolute -left-[21px] top-1 h-2.5 w-2.5 rounded-full bg-[#C8952A]" />
-                    <div className="flex items-center gap-2">
-                      <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${sender.className}`}>
-                        {sender.label}
-                      </span>
-                      <span className="text-xs text-muted-foreground">
-                        {format(new Date(entry.date), "d MMM yyyy, HH:mm", { locale: fr })}
-                      </span>
-                    </div>
-                    <p className="mt-1 text-sm text-foreground/80">{entry.message}</p>
-                  </li>
-                )
-              })}
-            </ol>
-          </CardContent>
+          {(showFullHistory || !lead.conversationSummary) && (
+            <CardContent>
+              <ol className="flex flex-col gap-4 border-l border-border pl-4">
+                {lead.conversations.map((entry) => {
+                  const sender = senderLabels[entry.sender]
+                  return (
+                    <li key={entry.id} className="relative">
+                      <span className="absolute -left-[21px] top-1 h-2.5 w-2.5 rounded-full bg-[#C8952A]" />
+                      <div className="flex items-center gap-2">
+                        <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${sender.className}`}>
+                          {sender.label}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          {format(new Date(entry.date), "d MMM yyyy, HH:mm", { locale: fr })}
+                        </span>
+                      </div>
+                      <p className="mt-1 text-sm text-foreground/80">{entry.message}</p>
+                    </li>
+                  )
+                })}
+              </ol>
+            </CardContent>
+          )}
         </Card>
       </div>
     </div>

@@ -42,6 +42,7 @@ export interface Lead {
   lastContact: string
   createdAt: string
   conversations: ConversationEntry[]
+  conversationSummary?: string
   projectType?: "buyer" | "seller" | null
   buyerQualification?: BuyerQualification
   sellerQualification?: SellerQualification

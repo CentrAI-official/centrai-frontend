@@ -49,6 +49,7 @@ interface ContactApiResponse {
   buyer_qualification?: BuyerQualificationApiResponse
   seller_qualification?: SellerQualificationApiResponse
   appointments?: AppointmentApiResponse[]
+  conversation_notes: string | null
 }
 
 function mapMessageToConversationEntry(message: MessageApiResponse): ConversationEntry {
@@ -112,6 +113,7 @@ function mapContactToLead(contact: ContactApiResponse): Lead {
       endTimeUtc: appointment.end_time_utc,
       status: appointment.status,
     })),
+    conversationSummary: contact.conversation_notes ?? undefined,
   }
 }
 
