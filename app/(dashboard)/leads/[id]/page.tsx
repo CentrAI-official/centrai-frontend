@@ -179,37 +179,35 @@ export default function LeadDetailPage() {
           </Card>
         )}
 
-        {lead.conversationSummary && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg text-[#1A3A5C]">
-                <Sparkles className="h-4 w-4 text-[#C8952A]" /> Résumé de la conversation
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="whitespace-pre-line text-sm text-foreground/80">{lead.conversationSummary}</p>
-            </CardContent>
-          </Card>
-        )}
-
         <Card>
-          <CardHeader
-            className={lead.conversationSummary ? "cursor-pointer select-none" : undefined}
-            onClick={lead.conversationSummary ? () => setShowFullHistory((prev) => !prev) : undefined}
-          >
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-lg text-[#1A3A5C]">Historique des conversations</CardTitle>
-              {lead.conversationSummary && (
-                <ChevronDown
-                  className={`h-4 w-4 text-muted-foreground transition-transform ${
-                    showFullHistory ? "rotate-180" : ""
-                  }`}
-                />
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg text-[#1A3A5C]">
+              {lead.conversationSummary ? (
+                <>
+                  <Sparkles className="h-4 w-4 text-[#C8952A]" /> Résumé de la conversation
+                </>
+              ) : (
+                "Historique des conversations"
               )}
-            </div>
+            </CardTitle>
           </CardHeader>
-          {(showFullHistory || !lead.conversationSummary) && (
-            <CardContent>
+          <CardContent className="flex flex-col gap-4">
+            {lead.conversationSummary && (
+              <>
+                <p className="whitespace-pre-line text-sm text-foreground/80">{lead.conversationSummary}</p>
+                <button
+                  type="button"
+                  onClick={() => setShowFullHistory((prev) => !prev)}
+                  className="flex w-fit items-center gap-1 text-xs font-medium text-[#1A3A5C] hover:underline"
+                >
+                  {showFullHistory ? "Masquer l'historique complet" : "Voir l'historique complet"}
+                  <ChevronDown
+                    className={`h-3.5 w-3.5 transition-transform ${showFullHistory ? "rotate-180" : ""}`}
+                  />
+                </button>
+              </>
+            )}
+            {(showFullHistory || !lead.conversationSummary) && (
               <ol className="flex flex-col gap-4 border-l border-border pl-4">
                 {lead.conversations.map((entry) => {
                   const sender = senderLabels[entry.sender]
@@ -229,8 +227,8 @@ export default function LeadDetailPage() {
                   )
                 })}
               </ol>
-            </CardContent>
-          )}
+            )}
+          </CardContent>
         </Card>
       </div>
     </div>
