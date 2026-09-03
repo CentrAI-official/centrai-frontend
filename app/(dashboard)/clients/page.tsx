@@ -16,6 +16,11 @@ import { type Client } from "@/lib/mocks"
 import { useClients } from "@/hooks/useClients"
 import { getInitials } from "@/lib/utils"
 
+const typeLabels: Record<NonNullable<Client["type"]>, string> = {
+  buyer: "Acheteur",
+  seller: "Vendeur",
+}
+
 export default function ClientsPage() {
   const { data: clients, isLoading } = useClients()
   const [selected, setSelected] = useState<Client | null>(null)
@@ -55,13 +60,22 @@ export default function ClientsPage() {
                 </Avatar>
                 <div>
                   <p className="font-medium text-[#1A3A5C]">{client.name}</p>
-                  <p className="text-xs capitalize text-muted-foreground">{client.status}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-xs capitalize text-muted-foreground">{client.status}</p>
+                    {client.type && (
+                      <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700">
+                        {typeLabels[client.type]}
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
-              <div className="flex items-center gap-2 text-sm text-foreground/80">
-                <Building2 className="h-4 w-4 shrink-0 text-muted-foreground" />
-                <span className="truncate">{client.property}</span>
-              </div>
+              {client.property && (
+                <div className="flex items-center gap-2 text-sm text-foreground/80">
+                  <Building2 className="h-4 w-4 shrink-0 text-muted-foreground" />
+                  <span className="truncate">{client.property}</span>
+                </div>
+              )}
             </CardContent>
           </Card>
         ))}
@@ -78,7 +92,14 @@ export default function ClientsPage() {
                       {getInitials(selected.name)}
                     </AvatarFallback>
                   </Avatar>
-                  <DialogTitle className="text-lg text-[#1A3A5C]">{selected.name}</DialogTitle>
+                  <div>
+                    <DialogTitle className="text-lg text-[#1A3A5C]">{selected.name}</DialogTitle>
+                    {selected.type && (
+                      <span className="mt-1 inline-block rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700">
+                        {typeLabels[selected.type]}
+                      </span>
+                    )}
+                  </div>
                 </div>
               </DialogHeader>
               <div className="flex flex-col gap-3 text-sm">
@@ -88,9 +109,11 @@ export default function ClientsPage() {
                 <div className="flex items-center gap-2 text-foreground/80">
                   <Phone className="h-4 w-4 text-muted-foreground" /> {selected.phone}
                 </div>
-                <div className="flex items-center gap-2 text-foreground/80">
-                  <Building2 className="h-4 w-4 text-muted-foreground" /> {selected.property}
-                </div>
+                {selected.property && (
+                  <div className="flex items-center gap-2 text-foreground/80">
+                    <Building2 className="h-4 w-4 text-muted-foreground" /> {selected.property}
+                  </div>
+                )}
                 <div className="mt-1 flex items-start gap-2 rounded-md bg-muted p-3 text-foreground/80">
                   <StickyNote className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
                   <p>{selected.notes}</p>

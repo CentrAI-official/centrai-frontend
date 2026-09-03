@@ -9,6 +9,7 @@ interface ClientApiResponse {
   phone: string | null
   status: string | null
   notes?: string | null
+  type?: string | null
 }
 
 function mapApiClient(client: ClientApiResponse): Client {
@@ -20,6 +21,7 @@ function mapApiClient(client: ClientApiResponse): Client {
     property: "",
     status: client.status === "active" ? "actif" : "ancien",
     notes: client.notes ?? "",
+    type: client.type === "seller" ? "seller" : "buyer",
   }
 }
 

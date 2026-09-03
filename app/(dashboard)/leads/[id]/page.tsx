@@ -2,14 +2,27 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { useParams } from "next/navigation"
+import { useParams, useRouter } from "next/navigation"
 import { format } from "date-fns"
 import { fr } from "date-fns/locale"
-import { ChevronRight, ChevronDown, Mail, Phone, Wallet, Tag, CalendarClock, Home, Sparkles } from "lucide-react"
+import {
+  ChevronRight,
+  ChevronDown,
+  Mail,
+  Phone,
+  Wallet,
+  Tag,
+  CalendarClock,
+  Home,
+  Sparkles,
+  UserPlus,
+  CheckCircle2,
+} from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Button } from "@/components/ui/button"
 import { StatusBadge, type Status } from "@/components/ui/StatusBadge"
-import { useLead } from "@/hooks/useLeads"
+import { useLead, useConvertLeadToClient } from "@/hooks/useLeads"
 import type { LeadSource } from "@/lib/mocks"
 
 function formatBoolean(value: boolean | null | undefined) {
@@ -33,7 +46,9 @@ const senderLabels: Record<string, { label: string; className: string }> = {
 
 export default function LeadDetailPage() {
   const params = useParams<{ id: string }>()
+  const router = useRouter()
   const { data: lead, isLoading } = useLead(params.id)
+  const convertToClient = useConvertLeadToClient()
   const [showFullHistory, setShowFullHistory] = useState(false)
 
   if (isLoading) {
@@ -51,12 +66,37 @@ export default function LeadDetailPage() {
 
   return (
     <div>
-      <div className="mb-6 flex items-center gap-1 text-sm text-muted-foreground">
-        <Link href="/leads" className="hover:text-[#1A3A5C]">
-          Leads
-        </Link>
-        <ChevronRight className="h-3.5 w-3.5" />
-        <span className="text-[#1A3A5C]">{lead.name}</span>
+      <div className="mb-6 flex items-center justify-between gap-2">
+        <div className="flex items-center gap-1 text-sm text-muted-foreground">
+          <Link href="/leads" className="hover:text-[#1A3A5C]">
+            Leads
+          </Link>
+          <ChevronRight className="h-3.5 w-3.5" />
+          <span className="text-[#1A3A5C]">{lead.name}</span>
+        </div>
+
+        {lead.isClient ? (
+          <Link
+            href="/clients"
+            className="flex items-center gap-1.5 text-sm font-medium text-green-700 hover:underline"
+          >
+            <CheckCircle2 className="h-4 w-4" /> Déjà transféré vers Clients
+          </Link>
+        ) : (
+          <Button
+            size="sm"
+            className="bg-[#1A3A5C] hover:bg-[#142d47]"
+            disabled={convertToClient.isPending}
+            onClick={() => {
+              convertToClient.mutate(lead.id, {
+                onSuccess: () => router.push("/clients"),
+              })
+            }}
+          >
+            <UserPlus className="mr-1.5 h-4 w-4" />
+            {convertToClient.isPending ? "Transfert..." : "Transférer vers Clients"}
+          </Button>
+        )}
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">

@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { apiClient } from "@/lib/api"
 import { mockLeads, Lead, LeadStatus, LeadSource, ConversationEntry } from "@/lib/mocks"
 
@@ -50,6 +50,7 @@ interface ContactApiResponse {
   seller_qualification?: SellerQualificationApiResponse
   appointments?: AppointmentApiResponse[]
   conversation_notes: string | null
+  is_client?: boolean
 }
 
 function mapMessageToConversationEntry(message: MessageApiResponse): ConversationEntry {
@@ -114,6 +115,7 @@ function mapContactToLead(contact: ContactApiResponse): Lead {
       status: appointment.status,
     })),
     conversationSummary: contact.conversation_notes ?? undefined,
+    isClient: contact.is_client ?? false,
   }
 }
 
@@ -141,6 +143,20 @@ export function useLead(id: string) {
       } catch {
         return mockLeads.find((lead) => lead.id === id)
       }
+    },
+  })
+}
+
+export function useConvertLeadToClient() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (leadId: string) => {
+      const { data } = await apiClient.post(`/api/leads/${leadId}/convert-to-client`)
+      return data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["leads"] })
+      queryClient.invalidateQueries({ queryKey: ["clients"] })
     },
   })
 }

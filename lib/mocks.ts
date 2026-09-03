@@ -47,6 +47,7 @@ export interface Lead {
   buyerQualification?: BuyerQualification
   sellerQualification?: SellerQualification
   appointments?: LeadAppointment[]
+  isClient?: boolean
 }
 
 export const mockLeads: Lead[] = [
@@ -463,6 +464,7 @@ export interface Client {
   property: string
   status: "actif" | "ancien"
   notes: string
+  type?: "buyer" | "seller"
 }
 
 export const mockClients: Client[] = [
