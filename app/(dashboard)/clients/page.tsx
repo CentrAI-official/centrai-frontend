@@ -116,7 +116,7 @@ export default function ClientsPage() {
                 )}
                 <div className="mt-1 flex items-start gap-2 rounded-md bg-muted p-3 text-foreground/80">
                   <StickyNote className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
-                  <p>{selected.notes}</p>
+                  <p className="whitespace-pre-line">{selected.notes}</p>
                 </div>
               </div>
             </>
