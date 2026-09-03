@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
-import { Mail, Phone, Building2, StickyNote, Plus, Home } from "lucide-react"
+import { Mail, Phone, Building2, StickyNote, Plus, Home, Sparkles, ChevronDown } from "lucide-react"
 import { PageHeader } from "@/components/ui/PageHeader"
 import { Card, CardContent } from "@/components/ui/card"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
@@ -54,16 +54,22 @@ export default function ClientsPage() {
   const searchParams = useSearchParams()
 
   const [selected, setSelected] = useState<Client | null>(null)
+  const [showFullNotes, setShowFullNotes] = useState(false)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [form, setForm] = useState(emptyForm)
   const [autoOpenedId, setAutoOpenedId] = useState<string | null>(null)
+
+  function openClient(client: Client) {
+    setSelected(client)
+    setShowFullNotes(false)
+  }
 
   useEffect(() => {
     const openId = searchParams.get("open")
     if (!openId || openId === autoOpenedId || !clients) return
     const match = clients.find((c) => c.id === openId)
     if (match) {
-      setSelected(match)
+      openClient(match)
       setAutoOpenedId(openId)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -124,7 +130,7 @@ export default function ClientsPage() {
           <Card
             key={client.id}
             className="cursor-pointer transition-shadow hover:shadow-md"
-            onClick={() => setSelected(client)}
+            onClick={() => openClient(client)}
           >
             <CardContent className="flex flex-col gap-3">
               <div className="flex items-center gap-3">
@@ -145,6 +151,12 @@ export default function ClientsPage() {
                   </div>
                 </div>
               </div>
+              {client.summary && (
+                <div className="flex items-start gap-2 text-sm text-foreground/80">
+                  <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-[#C8952A]" />
+                  <span className="line-clamp-2">{client.summary}</span>
+                </div>
+              )}
               {client.property && (
                 <div className="flex items-center gap-2 text-sm text-foreground/80">
                   <Building2 className="h-4 w-4 shrink-0 text-muted-foreground" />
@@ -209,10 +221,32 @@ export default function ClientsPage() {
                     <Home className="h-4 w-4" /> Voir la propriété : {selected.propertyAddress}
                   </Link>
                 )}
-                <div className="mt-1 flex items-start gap-2 rounded-md bg-muted p-3 text-foreground/80">
-                  <StickyNote className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
-                  <p className="whitespace-pre-line">{selected.notes}</p>
-                </div>
+                {selected.summary && (
+                  <div className="flex items-start gap-2 rounded-md bg-[#C8952A]/10 p-3 text-foreground/80">
+                    <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-[#C8952A]" />
+                    <p className="font-medium">{selected.summary}</p>
+                  </div>
+                )}
+                {selected.notes && (
+                  <div className="flex flex-col gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowFullNotes((prev) => !prev)}
+                      className="flex w-fit items-center gap-1 text-xs font-medium text-[#1A3A5C] hover:underline"
+                    >
+                      {showFullNotes ? "Masquer les notes complètes" : "Voir les notes complètes"}
+                      <ChevronDown
+                        className={`h-3.5 w-3.5 transition-transform ${showFullNotes ? "rotate-180" : ""}`}
+                      />
+                    </button>
+                    {showFullNotes && (
+                      <div className="flex items-start gap-2 rounded-md bg-muted p-3 text-foreground/80">
+                        <StickyNote className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+                        <p className="whitespace-pre-line">{selected.notes}</p>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </>
           )}

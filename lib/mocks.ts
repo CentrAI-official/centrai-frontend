@@ -469,6 +469,7 @@ export interface Client {
   type?: "buyer" | "seller"
   propertyId?: string
   propertyAddress?: string
+  summary?: string
 }
 
 export const mockClients: Client[] = [

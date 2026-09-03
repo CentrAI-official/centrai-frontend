@@ -12,6 +12,15 @@ interface ClientApiResponse {
   type?: string | null
   property_id: string | null
   property_address: string | null
+  summary: string | null
+}
+
+// Filet de securite pour les clients crees avant l'ajout du champ "summary" dedie :
+// on prend la premiere ligne non vide des notes existantes plutot que de n'afficher rien.
+function fallbackSummaryFromNotes(notes: string | null | undefined): string | undefined {
+  if (!notes) return undefined
+  const firstLine = notes.split("\n").map((line) => line.trim()).find((line) => line.length > 0)
+  return firstLine || undefined
 }
 
 export interface ClientFormInput {
@@ -39,6 +48,7 @@ function mapApiClient(client: ClientApiResponse): Client {
     type: client.type === "seller" ? "seller" : "buyer",
     propertyId: client.property_id ?? undefined,
     propertyAddress: client.property_address ?? undefined,
+    summary: client.summary ?? fallbackSummaryFromNotes(client.notes),
   }
 }
 
