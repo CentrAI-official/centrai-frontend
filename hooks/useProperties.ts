@@ -25,7 +25,7 @@ export interface PropertyFormInput {
   price: number
   bedrooms: number
   bathrooms: number
-  status: "active" | "sold"
+  status: "active" | "pending" | "sold"
   commissionPercent?: number
   url?: string
   clientName?: string
@@ -40,7 +40,7 @@ function mapApiProperty(property: PropertyApiResponse): Property {
     type: property.property_type ?? "",
     price: Number(property.price ?? 0),
     listedDate: (property.last_seen_at ?? property.created_at).slice(0, 10),
-    status: property.status === "sold" ? "sold" : "active",
+    status: property.status === "sold" ? "sold" : property.status === "pending" ? "pending" : "active",
     bedrooms: Number(property.bedrooms ?? 0),
     bathrooms: Number(property.bathrooms ?? 0),
     commissionPercent: property.commission_percent != null ? Number(property.commission_percent) : undefined,

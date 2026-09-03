@@ -38,7 +38,7 @@ const emptyForm = {
   price: "",
   bedrooms: "",
   bathrooms: "",
-  status: "active" as "active" | "sold",
+  status: "active" as "active" | "pending" | "sold",
   commissionPercent: "",
   url: "",
   clientName: "",
@@ -134,7 +134,73 @@ export default function PropertiesPage() {
 
   const propertyList = properties ?? []
   const activeProperties = propertyList.filter((p) => p.status === "active")
+  const pendingProperties = propertyList.filter((p) => p.status === "pending")
   const soldProperties = propertyList.filter((p) => p.status === "sold")
+
+  function renderPropertyCard(property: Property) {
+    return (
+      <Card
+        key={property.id}
+        className="cursor-pointer transition-shadow hover:shadow-md"
+        onClick={() => openEdit(property)}
+      >
+        <CardContent className="flex flex-col gap-3">
+          <div className="flex items-start justify-between gap-2">
+            <p className="font-medium text-[#1A3A5C]">{property.address}</p>
+            <StatusBadge status={property.status} />
+          </div>
+          <p className="text-sm text-muted-foreground">{property.type}</p>
+          <p className="text-xl font-bold text-[#1A3A5C]">
+            {formatCurrency(property.status === "sold" ? property.soldPrice ?? property.price : property.price)}
+          </p>
+          {property.status === "sold" && (
+            <p className="text-sm font-medium text-green-600">
+              Commission générée: {formatCurrency(property.commission ?? 0)}
+            </p>
+          )}
+          <div className="flex items-center gap-4 text-xs text-muted-foreground">
+            <span className="flex items-center gap-1">
+              <BedDouble className="h-3.5 w-3.5" /> {property.bedrooms}
+            </span>
+            <span className="flex items-center gap-1">
+              <Bath className="h-3.5 w-3.5" /> {property.bathrooms}
+            </span>
+            {property.status === "active" && (
+              <span className="flex items-center gap-1">
+                <CalendarDays className="h-3.5 w-3.5" />
+                {format(parseLocalDate(property.listedDate), "d MMM yyyy", { locale: fr })}
+              </span>
+            )}
+          </div>
+          {property.commissionPercent != null && (
+            <span className="flex items-center gap-1 text-xs font-medium text-[#C8952A]">
+              <Percent className="h-3.5 w-3.5" /> {property.commissionPercent}% de commission
+            </span>
+          )}
+          {property.url && (
+            <a
+              href={property.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="flex items-center gap-1 text-xs font-medium text-[#1A3A5C] hover:underline"
+            >
+              <LinkIcon className="h-3.5 w-3.5" /> Voir l&apos;annonce
+            </a>
+          )}
+          {property.clientId && (
+            <Link
+              href={`/clients?open=${property.clientId}`}
+              onClick={(e) => e.stopPropagation()}
+              className="flex items-center gap-1 text-xs font-medium text-[#1A3A5C] hover:underline"
+            >
+              <User className="h-3.5 w-3.5" /> Voir le client : {property.clientName}
+            </Link>
+          )}
+        </CardContent>
+      </Card>
+    )
+  }
 
   return (
     <div>
@@ -148,126 +214,31 @@ export default function PropertiesPage() {
       <Tabs defaultValue="active">
         <TabsList>
           <TabsTrigger value="active">Actives ({activeProperties.length})</TabsTrigger>
+          <TabsTrigger value="pending">En attente ({pendingProperties.length})</TabsTrigger>
           <TabsTrigger value="sold">Vendues ({soldProperties.length})</TabsTrigger>
         </TabsList>
 
         <TabsContent value="active" className="mt-4">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {activeProperties.map((property) => (
-              <Card
-                key={property.id}
-                className="cursor-pointer transition-shadow hover:shadow-md"
-                onClick={() => openEdit(property)}
-              >
-                <CardContent className="flex flex-col gap-3">
-                  <div className="flex items-start justify-between gap-2">
-                    <p className="font-medium text-[#1A3A5C]">{property.address}</p>
-                    <StatusBadge status="active" />
-                  </div>
-                  <p className="text-sm text-muted-foreground">{property.type}</p>
-                  <p className="text-xl font-bold text-[#1A3A5C]">{formatCurrency(property.price)}</p>
-                  <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                    <span className="flex items-center gap-1">
-                      <BedDouble className="h-3.5 w-3.5" /> {property.bedrooms}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Bath className="h-3.5 w-3.5" /> {property.bathrooms}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <CalendarDays className="h-3.5 w-3.5" />
-                      {format(parseLocalDate(property.listedDate), "d MMM yyyy", { locale: fr })}
-                    </span>
-                  </div>
-                  {property.commissionPercent != null && (
-                    <span className="flex items-center gap-1 text-xs font-medium text-[#C8952A]">
-                      <Percent className="h-3.5 w-3.5" /> {property.commissionPercent}% de commission
-                    </span>
-                  )}
-                  {property.url && (
-                    <a
-                      href={property.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={(e) => e.stopPropagation()}
-                      className="flex items-center gap-1 text-xs font-medium text-[#1A3A5C] hover:underline"
-                    >
-                      <LinkIcon className="h-3.5 w-3.5" /> Voir l&apos;annonce
-                    </a>
-                  )}
-                  {property.clientId && (
-                    <Link
-                      href={`/clients?open=${property.clientId}`}
-                      onClick={(e) => e.stopPropagation()}
-                      className="flex items-center gap-1 text-xs font-medium text-[#1A3A5C] hover:underline"
-                    >
-                      <User className="h-3.5 w-3.5" /> Voir le client : {property.clientName}
-                    </Link>
-                  )}
-                </CardContent>
-              </Card>
-            ))}
+            {activeProperties.map(renderPropertyCard)}
             {activeProperties.length === 0 && (
               <p className="text-sm text-muted-foreground">Aucune propriété active.</p>
             )}
           </div>
         </TabsContent>
 
+        <TabsContent value="pending" className="mt-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {pendingProperties.map(renderPropertyCard)}
+            {pendingProperties.length === 0 && (
+              <p className="text-sm text-muted-foreground">Aucune propriété en attente.</p>
+            )}
+          </div>
+        </TabsContent>
+
         <TabsContent value="sold" className="mt-4">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {soldProperties.map((property) => (
-              <Card
-                key={property.id}
-                className="cursor-pointer transition-shadow hover:shadow-md"
-                onClick={() => openEdit(property)}
-              >
-                <CardContent className="flex flex-col gap-3">
-                  <div className="flex items-start justify-between gap-2">
-                    <p className="font-medium text-[#1A3A5C]">{property.address}</p>
-                    <StatusBadge status="sold" />
-                  </div>
-                  <p className="text-sm text-muted-foreground">{property.type}</p>
-                  <p className="text-xl font-bold text-[#1A3A5C]">
-                    {formatCurrency(property.soldPrice ?? property.price)}
-                  </p>
-                  <p className="text-sm font-medium text-green-600">
-                    Commission générée: {formatCurrency(property.commission ?? 0)}
-                  </p>
-                  <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                    <span className="flex items-center gap-1">
-                      <BedDouble className="h-3.5 w-3.5" /> {property.bedrooms}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Bath className="h-3.5 w-3.5" /> {property.bathrooms}
-                    </span>
-                  </div>
-                  {property.commissionPercent != null && (
-                    <span className="flex items-center gap-1 text-xs font-medium text-[#C8952A]">
-                      <Percent className="h-3.5 w-3.5" /> {property.commissionPercent}% de commission
-                    </span>
-                  )}
-                  {property.url && (
-                    <a
-                      href={property.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={(e) => e.stopPropagation()}
-                      className="flex items-center gap-1 text-xs font-medium text-[#1A3A5C] hover:underline"
-                    >
-                      <LinkIcon className="h-3.5 w-3.5" /> Voir l&apos;annonce
-                    </a>
-                  )}
-                  {property.clientId && (
-                    <Link
-                      href={`/clients?open=${property.clientId}`}
-                      onClick={(e) => e.stopPropagation()}
-                      className="flex items-center gap-1 text-xs font-medium text-[#1A3A5C] hover:underline"
-                    >
-                      <User className="h-3.5 w-3.5" /> Voir le client : {property.clientName}
-                    </Link>
-                  )}
-                </CardContent>
-              </Card>
-            ))}
+            {soldProperties.map(renderPropertyCard)}
             {soldProperties.length === 0 && (
               <p className="text-sm text-muted-foreground">Aucune propriété vendue.</p>
             )}
@@ -368,13 +339,14 @@ export default function PropertiesPage() {
               <Label>Statut</Label>
               <Select
                 value={form.status}
-                onValueChange={(v) => setForm({ ...form, status: v as "active" | "sold" })}
+                onValueChange={(v) => setForm({ ...form, status: v as "active" | "pending" | "sold" })}
               >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="pending">En attente</SelectItem>
                   <SelectItem value="sold">Vendue</SelectItem>
                 </SelectContent>
               </Select>

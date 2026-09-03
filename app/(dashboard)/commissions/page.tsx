@@ -15,6 +15,7 @@ import {
 import { DollarSign, TrendingUp, Target } from "lucide-react"
 import { PageHeader } from "@/components/ui/PageHeader"
 import { KPICard } from "@/components/ui/KPICard"
+import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -27,7 +28,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { useCommissions } from "@/hooks/useCommissions"
+import { useCommissions, useMarkCommissionPaid } from "@/hooks/useCommissions"
 import { formatCurrency, parseLocalDate } from "@/lib/utils"
 
 const ANNUAL_GOAL = 220000
@@ -38,15 +39,19 @@ const monthLabels = [
 
 export default function CommissionsPage() {
   const { data: commissions, isLoading } = useCommissions()
+  const markPaid = useMarkCommissionPaid()
   const now = new Date()
 
-  const { thisMonthTotal, thisYearTotal, chartData } = useMemo(() => {
+  // Seules les commissions "payees" (vente conclue et confirmee) comptent dans les totaux
+  // et le graphique -- une commission "en attente" n'est pas encore acquise.
+  const { thisMonthTotal, thisYearTotal, chartData, paidCommissions, pendingCommissions } = useMemo(() => {
     const list = commissions ?? []
     let monthTotal = 0
     let yearTotal = 0
     const monthly = Array.from({ length: 12 }, (_, i) => ({ month: monthLabels[i], total: 0 }))
 
     list.forEach((c) => {
+      if (c.status !== "paid") return
       const date = parseLocalDate(c.date)
       if (getYear(date) === getYear(now)) {
         yearTotal += c.commissionAmount
@@ -57,7 +62,13 @@ export default function CommissionsPage() {
       }
     })
 
-    return { thisMonthTotal: monthTotal, thisYearTotal: yearTotal, chartData: monthly }
+    return {
+      thisMonthTotal: monthTotal,
+      thisYearTotal: yearTotal,
+      chartData: monthly,
+      paidCommissions: list.filter((c) => c.status === "paid"),
+      pendingCommissions: list.filter((c) => c.status !== "paid"),
+    }
   }, [commissions, now])
 
   const annualProgress = Math.min(100, Math.round((thisYearTotal / ANNUAL_GOAL) * 100))
@@ -114,15 +125,19 @@ export default function CommissionsPage() {
 
       <Card className="mt-6">
         <CardHeader>
-          <CardTitle className="text-base text-[#1A3A5C]">Transactions</CardTitle>
+          <CardTitle className="text-base text-[#1A3A5C]">
+            Transactions — En attente ({pendingCommissions.length})
+          </CardTitle>
         </CardHeader>
         <CardContent className="px-0">
           {isLoading ? (
             <div className="flex flex-col gap-2 px-4">
-              {Array.from({ length: 5 }).map((_, i) => (
+              {Array.from({ length: 3 }).map((_, i) => (
                 <Skeleton key={i} className="h-12 w-full" />
               ))}
             </div>
+          ) : pendingCommissions.length === 0 ? (
+            <p className="px-4 text-sm text-muted-foreground">Aucune commission en attente.</p>
           ) : (
             <Table>
               <TableHeader>
@@ -136,7 +151,63 @@ export default function CommissionsPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {(commissions ?? []).map((c) => (
+                {pendingCommissions.map((c) => (
+                  <TableRow key={c.id}>
+                    <TableCell className="pl-4 font-medium text-[#1A3A5C]">{c.property}</TableCell>
+                    <TableCell>{formatCurrency(c.salePrice)}</TableCell>
+                    <TableCell>{c.commissionPercent}%</TableCell>
+                    <TableCell className="font-medium">{formatCurrency(c.commissionAmount)}</TableCell>
+                    <TableCell>{format(parseLocalDate(c.date), "d MMM yyyy", { locale: fr })}</TableCell>
+                    <TableCell className="pr-4">
+                      <div className="flex items-center gap-2">
+                        <StatusBadge status={c.status} />
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={markPaid.isPending}
+                          onClick={() => markPaid.mutate(c.id)}
+                        >
+                          Marquer comme payée
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card className="mt-6">
+        <CardHeader>
+          <CardTitle className="text-base text-[#1A3A5C]">
+            Transactions — Vendues ({paidCommissions.length})
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="px-0">
+          {isLoading ? (
+            <div className="flex flex-col gap-2 px-4">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <Skeleton key={i} className="h-12 w-full" />
+              ))}
+            </div>
+          ) : paidCommissions.length === 0 ? (
+            <p className="px-4 text-sm text-muted-foreground">Aucune commission confirmée pour l&apos;instant.</p>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="pl-4">Propriété</TableHead>
+                  <TableHead>Prix de vente</TableHead>
+                  <TableHead>Commission %</TableHead>
+                  <TableHead>Commission $</TableHead>
+                  <TableHead>Date</TableHead>
+                  <TableHead className="pr-4">Statut</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {paidCommissions.map((c) => (
                   <TableRow key={c.id}>
                     <TableCell className="pl-4 font-medium text-[#1A3A5C]">{c.property}</TableCell>
                     <TableCell>{formatCurrency(c.salePrice)}</TableCell>

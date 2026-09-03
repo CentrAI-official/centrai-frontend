@@ -413,7 +413,7 @@ export interface Property {
   type: string
   price: number
   listedDate: string
-  status: "active" | "sold"
+  status: "active" | "pending" | "sold"
   soldPrice?: number
   commission?: number
   commissionPercent?: number
