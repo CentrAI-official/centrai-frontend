@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { apiClient } from "@/lib/api"
 import { mockClients, Client } from "@/lib/mocks"
 
@@ -10,6 +10,21 @@ interface ClientApiResponse {
   status: string | null
   notes?: string | null
   type?: string | null
+  property_id: string | null
+  property_address: string | null
+}
+
+export interface ClientFormInput {
+  name: string
+  email?: string
+  phone?: string
+  type: "buyer" | "seller"
+  notes?: string
+  propertyAddress?: string
+  propertyPrice?: number
+  propertyType?: string
+  propertyBedrooms?: number
+  propertyBathrooms?: number
 }
 
 function mapApiClient(client: ClientApiResponse): Client {
@@ -22,6 +37,8 @@ function mapApiClient(client: ClientApiResponse): Client {
     status: client.status === "active" ? "actif" : "ancien",
     notes: client.notes ?? "",
     type: client.type === "seller" ? "seller" : "buyer",
+    propertyId: client.property_id ?? undefined,
+    propertyAddress: client.property_address ?? undefined,
   }
 }
 
@@ -35,6 +52,20 @@ export function useClients() {
       } catch {
         return mockClients
       }
+    },
+  })
+}
+
+export function useCreateClient() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (input: ClientFormInput) => {
+      const { data } = await apiClient.post<ClientApiResponse>("/api/clients", input)
+      return mapApiClient(data)
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["clients"] })
+      queryClient.invalidateQueries({ queryKey: ["properties"] })
     },
   })
 }

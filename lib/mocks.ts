@@ -420,6 +420,8 @@ export interface Property {
   bedrooms: number
   bathrooms: number
   url?: string
+  clientId?: string
+  clientName?: string
 }
 
 export const mockProperties: Property[] = [
@@ -465,6 +467,8 @@ export interface Client {
   status: "actif" | "ancien"
   notes: string
   type?: "buyer" | "seller"
+  propertyId?: string
+  propertyAddress?: string
 }
 
 export const mockClients: Client[] = [

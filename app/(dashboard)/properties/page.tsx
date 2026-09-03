@@ -1,9 +1,11 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
+import Link from "next/link"
+import { useSearchParams } from "next/navigation"
 import { format } from "date-fns"
 import { fr } from "date-fns/locale"
-import { BedDouble, Bath, CalendarDays, Percent, Plus, Link as LinkIcon } from "lucide-react"
+import { BedDouble, Bath, CalendarDays, Percent, Plus, Link as LinkIcon, User } from "lucide-react"
 import { PageHeader } from "@/components/ui/PageHeader"
 import { Card, CardContent } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -39,12 +41,16 @@ const emptyForm = {
   status: "active" as "active" | "sold",
   commissionPercent: "",
   url: "",
+  clientName: "",
+  clientEmail: "",
+  clientPhone: "",
 }
 
 export default function PropertiesPage() {
   const { data: properties, isLoading } = useProperties()
   const createProperty = useCreateProperty()
   const updateProperty = useUpdateProperty()
+  const searchParams = useSearchParams()
 
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -67,9 +73,24 @@ export default function PropertiesPage() {
       status: property.status,
       commissionPercent: property.commissionPercent != null ? String(property.commissionPercent) : "",
       url: property.url ?? "",
+      clientName: "",
+      clientEmail: "",
+      clientPhone: "",
     })
     setDialogOpen(true)
   }
+
+  const [autoOpenedId, setAutoOpenedId] = useState<string | null>(null)
+  useEffect(() => {
+    const openId = searchParams.get("open")
+    if (!openId || openId === autoOpenedId || !properties) return
+    const match = properties.find((p) => p.id === openId)
+    if (match) {
+      openEdit(match)
+      setAutoOpenedId(openId)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, properties, autoOpenedId])
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -86,7 +107,15 @@ export default function PropertiesPage() {
     if (editingId) {
       updateProperty.mutate({ id: editingId, ...input }, { onSuccess: () => setDialogOpen(false) })
     } else {
-      createProperty.mutate(input, { onSuccess: () => setDialogOpen(false) })
+      createProperty.mutate(
+        {
+          ...input,
+          clientName: form.clientName.trim() === "" ? undefined : form.clientName.trim(),
+          clientEmail: form.clientEmail.trim() === "" ? undefined : form.clientEmail.trim(),
+          clientPhone: form.clientPhone.trim() === "" ? undefined : form.clientPhone.trim(),
+        },
+        { onSuccess: () => setDialogOpen(false) }
+      )
     }
   }
 
@@ -165,6 +194,15 @@ export default function PropertiesPage() {
                       <LinkIcon className="h-3.5 w-3.5" /> Voir l&apos;annonce
                     </a>
                   )}
+                  {property.clientId && (
+                    <Link
+                      href={`/clients?open=${property.clientId}`}
+                      onClick={(e) => e.stopPropagation()}
+                      className="flex items-center gap-1 text-xs font-medium text-[#1A3A5C] hover:underline"
+                    >
+                      <User className="h-3.5 w-3.5" /> Voir le client : {property.clientName}
+                    </Link>
+                  )}
                 </CardContent>
               </Card>
             ))}
@@ -218,6 +256,15 @@ export default function PropertiesPage() {
                       <LinkIcon className="h-3.5 w-3.5" /> Voir l&apos;annonce
                     </a>
                   )}
+                  {property.clientId && (
+                    <Link
+                      href={`/clients?open=${property.clientId}`}
+                      onClick={(e) => e.stopPropagation()}
+                      className="flex items-center gap-1 text-xs font-medium text-[#1A3A5C] hover:underline"
+                    >
+                      <User className="h-3.5 w-3.5" /> Voir le client : {property.clientName}
+                    </Link>
+                  )}
                 </CardContent>
               </Card>
             ))}
@@ -235,6 +282,18 @@ export default function PropertiesPage() {
               {editingId ? "Modifier la propriété" : "Nouvelle propriété"}
             </DialogTitle>
           </DialogHeader>
+          {editingId && (() => {
+            const editingProperty = propertyList.find((p) => p.id === editingId)
+            if (!editingProperty?.clientId) return null
+            return (
+              <Link
+                href={`/clients?open=${editingProperty.clientId}`}
+                className="-mt-2 flex w-fit items-center gap-1 text-xs font-medium text-[#1A3A5C] hover:underline"
+              >
+                <User className="h-3.5 w-3.5" /> Client vendeur : {editingProperty.clientName}
+              </Link>
+            )
+          })()}
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <div className="flex flex-col gap-2">
               <Label htmlFor="address">Adresse</Label>
@@ -320,6 +379,40 @@ export default function PropertiesPage() {
                 </SelectContent>
               </Select>
             </div>
+
+            {!editingId && (
+              <div className="flex flex-col gap-3 rounded-md border border-border p-3">
+                <p className="text-sm font-medium text-[#1A3A5C]">Client vendeur (optionnel)</p>
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="clientName">Nom</Label>
+                  <Input
+                    id="clientName"
+                    value={form.clientName}
+                    onChange={(e) => setForm({ ...form, clientName: e.target.value })}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-2">
+                    <Label htmlFor="clientEmail">Courriel</Label>
+                    <Input
+                      id="clientEmail"
+                      type="email"
+                      value={form.clientEmail}
+                      onChange={(e) => setForm({ ...form, clientEmail: e.target.value })}
+                    />
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <Label htmlFor="clientPhone">Téléphone</Label>
+                    <Input
+                      id="clientPhone"
+                      value={form.clientPhone}
+                      onChange={(e) => setForm({ ...form, clientPhone: e.target.value })}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
             <DialogFooter>
               <Button
                 type="submit"

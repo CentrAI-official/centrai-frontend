@@ -14,6 +14,8 @@ interface PropertyApiResponse {
   last_seen_at: string | null
   created_at: string
   url: string | null
+  client_id: string | null
+  client_name: string | null
 }
 
 export interface PropertyFormInput {
@@ -25,6 +27,9 @@ export interface PropertyFormInput {
   status: "active" | "sold"
   commissionPercent?: number
   url?: string
+  clientName?: string
+  clientEmail?: string
+  clientPhone?: string
 }
 
 function mapApiProperty(property: PropertyApiResponse): Property {
@@ -39,6 +44,8 @@ function mapApiProperty(property: PropertyApiResponse): Property {
     bathrooms: Number(property.bathrooms ?? 0),
     commissionPercent: property.commission_percent != null ? Number(property.commission_percent) : undefined,
     url: property.url ?? undefined,
+    clientId: property.client_id ?? undefined,
+    clientName: property.client_name ?? undefined,
   }
 }
 
@@ -65,6 +72,7 @@ export function useCreateProperty() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["properties"] })
+      queryClient.invalidateQueries({ queryKey: ["clients"] })
     },
   })
 }
