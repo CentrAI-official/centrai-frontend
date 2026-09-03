@@ -16,6 +16,7 @@ interface PropertyApiResponse {
   url: string | null
   client_id: string | null
   client_name: string | null
+  commission_amount: string | number | null
 }
 
 export interface PropertyFormInput {
@@ -46,6 +47,7 @@ function mapApiProperty(property: PropertyApiResponse): Property {
     url: property.url ?? undefined,
     clientId: property.client_id ?? undefined,
     clientName: property.client_name ?? undefined,
+    commission: property.commission_amount != null ? Number(property.commission_amount) : undefined,
   }
 }
 
@@ -73,6 +75,7 @@ export function useCreateProperty() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["properties"] })
       queryClient.invalidateQueries({ queryKey: ["clients"] })
+      queryClient.invalidateQueries({ queryKey: ["commissions"] })
     },
   })
 }
@@ -86,6 +89,7 @@ export function useUpdateProperty() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["properties"] })
+      queryClient.invalidateQueries({ queryKey: ["commissions"] })
     },
   })
 }
