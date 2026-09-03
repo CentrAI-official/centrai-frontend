@@ -154,7 +154,7 @@ export default function ClientsPage() {
               {client.summary && (
                 <div className="flex items-start gap-2 text-sm text-foreground/80">
                   <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-[#C8952A]" />
-                  <span className="line-clamp-2">{client.summary}</span>
+                  <span className="line-clamp-3 whitespace-pre-line">{client.summary}</span>
                 </div>
               )}
               {client.property && (
@@ -224,7 +224,7 @@ export default function ClientsPage() {
                 {selected.summary && (
                   <div className="flex items-start gap-2 rounded-md bg-[#C8952A]/10 p-3 text-foreground/80">
                     <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-[#C8952A]" />
-                    <p className="font-medium">{selected.summary}</p>
+                    <p className="whitespace-pre-line font-medium">{selected.summary}</p>
                   </div>
                 )}
                 {selected.notes && (
