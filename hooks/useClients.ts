@@ -15,25 +15,6 @@ interface ClientApiResponse {
   summary: string | null
 }
 
-function truncateWords(text: string, maxWords = 10): string {
-  const words = text.trim().split(/\s+/)
-  if (words.length <= maxWords) return text.trim()
-  return words.slice(0, maxWords).join(" ") + "…"
-}
-
-// Filet de securite pour les clients crees avant l'ajout du champ "summary" dedie :
-// on prend les 3 premieres lignes non vides des notes existantes plutot que rien afficher.
-function fallbackSummaryFromNotes(notes: string | null | undefined): string | undefined {
-  if (!notes) return undefined
-  const lines = notes
-    .split("\n")
-    .map((line) => line.replace(/^[-•]\s*/, "").trim())
-    .filter((line) => line.length > 0)
-    .slice(0, 3)
-    .map((line) => truncateWords(line))
-  return lines.length > 0 ? lines.map((line) => `• ${line}`).join("\n") : undefined
-}
-
 export interface ClientFormInput {
   name: string
   email?: string
@@ -59,7 +40,7 @@ function mapApiClient(client: ClientApiResponse): Client {
     type: client.type === "seller" ? "seller" : "buyer",
     propertyId: client.property_id ?? undefined,
     propertyAddress: client.property_address ?? undefined,
-    summary: client.summary ?? fallbackSummaryFromNotes(client.notes),
+    summary: client.summary ?? undefined,
   }
 }
 
