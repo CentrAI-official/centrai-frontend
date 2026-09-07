@@ -6,8 +6,10 @@ export interface Goals {
   annualGoal: number
 }
 
+// L'objectif mensuel n'est jamais saisi par le courtier : il est toujours
+// derive de l'objectif annuel (annuel / 12), calcule cote serveur.
 const mockGoals: Goals = {
-  monthlyGoal: 25000,
+  monthlyGoal: 220000 / 12,
   annualGoal: 220000,
 }
 
@@ -27,12 +29,12 @@ export function useGoals() {
   })
 
   const mutation = useMutation({
-    mutationFn: async (goals: Goals) => {
+    mutationFn: async (input: { annualGoal: number }) => {
       try {
-        const { data } = await apiClient.put("/api/settings/goals", goals)
+        const { data } = await apiClient.put<Goals>("/api/settings/goals", input)
         return data
       } catch {
-        return goals
+        return { annualGoal: input.annualGoal, monthlyGoal: input.annualGoal / 12 }
       }
     },
     onSuccess: (goals) => {

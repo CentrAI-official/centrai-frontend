@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
+import { useQueryClient } from "@tanstack/react-query"
 import {
   LayoutDashboard,
   Users,
@@ -10,7 +11,6 @@ import {
   Building2,
   DollarSign,
   Calendar,
-  Mail,
   Bot,
   Settings,
   LogOut,
@@ -29,15 +29,18 @@ const navItems = [
   { href: "/properties", label: "Propriétés", icon: Building2 },
   { href: "/commissions", label: "Commissions", icon: DollarSign },
   { href: "/calendar", label: "Calendrier", icon: Calendar },
-  { href: "/emails", label: "Courriels", icon: Mail },
-  { href: "/assistant", label: "Assistant IA", icon: Bot },
+  { href: "/assistant", label: "Assistant IA", icon: Bot, beta: true },
   { href: "/settings", label: "Paramètres", icon: Settings },
 ]
 
 function SidebarContent({ pathname, onNavigate }: { pathname: string; onNavigate?: () => void }) {
   const router = useRouter()
+  const queryClient = useQueryClient()
 
   function handleLogout() {
+    // Vide le cache local pour qu'aucune donnee du compte qui se deconnecte
+    // (leads/clients/objectifs) ne reste visible pour le prochain compte connecte.
+    queryClient.clear()
     removeToken()
     router.push("/login")
   }
@@ -64,6 +67,11 @@ function SidebarContent({ pathname, onNavigate }: { pathname: string; onNavigate
                 >
                   <Icon className="h-4 w-4" />
                   {item.label}
+                  {item.beta && (
+                    <span className="rounded-full bg-white/15 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white/90">
+                      Bêta
+                    </span>
+                  )}
                 </Link>
               </li>
             )

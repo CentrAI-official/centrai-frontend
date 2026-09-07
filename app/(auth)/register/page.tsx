@@ -11,46 +11,77 @@ import { Button } from "@/components/ui/button"
 import { apiClient } from "@/lib/api"
 import { setToken } from "@/lib/auth"
 
-export default function LoginPage() {
+export default function RegisterPage() {
   const router = useRouter()
   const queryClient = useQueryClient()
+  const [agencyName, setAgencyName] = useState("")
+  const [displayName, setDisplayName] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [confirmPassword, setConfirmPassword] = useState("")
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError("")
+
+    if (password !== confirmPassword) {
+      setError("Les mots de passe ne correspondent pas.")
+      return
+    }
+    if (password.length < 8) {
+      setError("Le mot de passe doit contenir au moins 8 caractères.")
+      return
+    }
+
     setLoading(true)
     try {
-      const { data } = await apiClient.post("/api/auth/login", { email, password })
-      // Vide le cache local avant de brancher le nouveau compte : sans ca,
-      // les pages peuvent afficher brievement les donnees du compte precedent
-      // (leads/clients/objectifs) tant que React Query n'a pas rafraichi.
+      const { data } = await apiClient.post("/api/auth/register", {
+        agencyName,
+        displayName,
+        email,
+        password,
+      })
       queryClient.clear()
       setToken(data.token)
-      router.push("/dashboard")
-    } catch {
-      setError("Identifiants invalides. Veuillez réessayer.")
+      router.push("/onboarding")
+    } catch (err: unknown) {
+      const message =
+        (err as { response?: { data?: { error?: string } } })?.response?.data?.error ??
+        "Impossible de créer le compte. Veuillez réessayer."
+      setError(message)
     } finally {
       setLoading(false)
     }
   }
 
-  function handleDemoMode() {
-    queryClient.clear()
-    setToken("demo-token")
-    localStorage.setItem("centrai_onboarding_done", "true")
-    router.push("/dashboard")
-  }
-
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-[#F8F9FA] px-4">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-[#F8F9FA] px-4 py-10">
       <h1 className="mb-8 text-3xl font-bold tracking-wide text-[#1A3A5C]">CENTRAI</h1>
       <Card className="w-full max-w-sm">
         <CardContent className="pt-2">
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="displayName">Nom complet</Label>
+              <Input
+                id="displayName"
+                placeholder="Jean Tremblay"
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+                required
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="agencyName">Nom de l&apos;agence</Label>
+              <Input
+                id="agencyName"
+                placeholder="Courtage Immobilier XYZ"
+                value={agencyName}
+                onChange={(e) => setAgencyName(e.target.value)}
+                required
+              />
+            </div>
             <div className="flex flex-col gap-2">
               <Label htmlFor="email">Courriel</Label>
               <Input
@@ -73,34 +104,32 @@ export default function LoginPage() {
                 required
               />
             </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="confirmPassword">Confirmer le mot de passe</Label>
+              <Input
+                id="confirmPassword"
+                type="password"
+                placeholder="••••••••"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+              />
+            </div>
             <Button
               type="submit"
               disabled={loading}
               className="mt-2 bg-[#C8952A] text-white hover:bg-[#b3821f]"
             >
-              {loading ? "Connexion..." : "Se connecter"}
+              {loading ? "Création du compte..." : "Créer mon compte"}
             </Button>
             {error && <p className="text-sm text-red-600">{error}</p>}
           </form>
           <p className="mt-4 text-center text-sm text-muted-foreground">
-            Pas encore de compte?{" "}
-            <Link href="/register" className="font-medium text-[#1A3A5C] hover:underline">
-              En créer un
+            Déjà un compte?{" "}
+            <Link href="/login" className="font-medium text-[#1A3A5C] hover:underline">
+              Se connecter
             </Link>
           </p>
-          <div className="mt-4 flex items-center gap-2">
-            <div className="h-px flex-1 bg-border" />
-            <span className="text-xs text-muted-foreground">ou</span>
-            <div className="h-px flex-1 bg-border" />
-          </div>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={handleDemoMode}
-            className="mt-4 w-full"
-          >
-            Mode démo
-          </Button>
         </CardContent>
       </Card>
     </div>

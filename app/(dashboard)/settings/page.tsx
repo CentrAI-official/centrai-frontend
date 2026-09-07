@@ -1,36 +1,62 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { CheckCircle2, Mail, CalendarDays } from "lucide-react"
+import { CheckCircle2, CalendarDays } from "lucide-react"
 import { PageHeader } from "@/components/ui/PageHeader"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { useGoals } from "@/hooks/useGoals"
+import { useProfile, useUpdateProfile } from "@/hooks/useProfile"
+import { formatCurrency } from "@/lib/utils"
 
 export default function SettingsPage() {
   const { data: goals, isLoading, updateGoals, isSaving } = useGoals()
-  const [monthlyGoal, setMonthlyGoal] = useState("")
   const [annualGoal, setAnnualGoal] = useState("")
   const [saved, setSaved] = useState(false)
 
+  const { data: profile, isLoading: isProfileLoading } = useProfile()
+  const updateProfile = useUpdateProfile()
+  const [displayName, setDisplayName] = useState("")
+  const [phone, setPhone] = useState("")
+  const [agencyName, setAgencyName] = useState("")
+  const [profileSaved, setProfileSaved] = useState(false)
+
   useEffect(() => {
     if (goals) {
-      setMonthlyGoal(String(goals.monthlyGoal))
       setAnnualGoal(String(goals.annualGoal))
     }
   }, [goals])
 
+  useEffect(() => {
+    if (profile) {
+      setDisplayName(profile.displayName)
+      setPhone(profile.phone)
+      setAgencyName(profile.agencyName)
+    }
+  }, [profile])
+
   function handleSaveGoals() {
     updateGoals(
-      { monthlyGoal: Number(monthlyGoal), annualGoal: Number(annualGoal) },
+      { annualGoal: Number(annualGoal) },
       {
         onSuccess: () => {
           setSaved(true)
           setTimeout(() => setSaved(false), 3000)
+        },
+      }
+    )
+  }
+
+  function handleSaveProfile() {
+    updateProfile.mutate(
+      { displayName, phone, agencyName },
+      {
+        onSuccess: () => {
+          setProfileSaved(true)
+          setTimeout(() => setProfileSaved(false), 3000)
         },
       }
     )
@@ -52,21 +78,49 @@ export default function SettingsPage() {
             <CardContent className="flex flex-col gap-4">
               <div className="flex flex-col gap-2">
                 <Label htmlFor="name">Nom complet</Label>
-                <Input id="name" defaultValue="Maxim Pigeon" />
+                <Input
+                  id="name"
+                  value={displayName}
+                  onChange={(e) => setDisplayName(e.target.value)}
+                  disabled={isProfileLoading}
+                />
               </div>
               <div className="flex flex-col gap-2">
                 <Label htmlFor="email">Courriel</Label>
-                <Input id="email" defaultValue="maxim.pigeon21@gmail.com" disabled />
+                <Input id="email" value={profile?.email ?? ""} disabled />
               </div>
               <div className="flex flex-col gap-2">
                 <Label htmlFor="phone">Téléphone</Label>
-                <Input id="phone" defaultValue="514-555-0100" />
+                <Input
+                  id="phone"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  disabled={isProfileLoading}
+                />
               </div>
               <div className="flex flex-col gap-2">
                 <Label htmlFor="agency">Agence</Label>
-                <Input id="agency" defaultValue="Courtage Immobilier du Saint-Laurent" />
+                <Input
+                  id="agency"
+                  value={agencyName}
+                  onChange={(e) => setAgencyName(e.target.value)}
+                  disabled={isProfileLoading}
+                />
               </div>
-              <Button className="mt-2 w-fit bg-[#1A3A5C] hover:bg-[#142d47]">Enregistrer</Button>
+              <div className="flex items-center gap-3">
+                <Button
+                  onClick={handleSaveProfile}
+                  disabled={updateProfile.isPending}
+                  className="mt-2 w-fit bg-[#1A3A5C] hover:bg-[#142d47]"
+                >
+                  {updateProfile.isPending ? "Sauvegarde..." : "Enregistrer"}
+                </Button>
+                {profileSaved && (
+                  <span className="mt-2 flex items-center gap-1 text-sm font-medium text-green-600">
+                    <CheckCircle2 className="h-4 w-4" /> Profil sauvegardé!
+                  </span>
+                )}
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -74,16 +128,6 @@ export default function SettingsPage() {
         <TabsContent value="objectifs" className="mt-4">
           <Card className="max-w-lg">
             <CardContent className="flex flex-col gap-4">
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="monthlyGoal">Objectif mensuel ($)</Label>
-                <Input
-                  id="monthlyGoal"
-                  type="number"
-                  value={monthlyGoal}
-                  onChange={(e) => setMonthlyGoal(e.target.value)}
-                  disabled={isLoading}
-                />
-              </div>
               <div className="flex flex-col gap-2">
                 <Label htmlFor="annualGoal">Objectif annuel ($)</Label>
                 <Input
@@ -93,6 +137,11 @@ export default function SettingsPage() {
                   onChange={(e) => setAnnualGoal(e.target.value)}
                   disabled={isLoading}
                 />
+                {goals && Number(annualGoal) > 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    Objectif mensuel calculé automatiquement : {formatCurrency(Number(annualGoal) / 12)}
+                  </p>
+                )}
               </div>
               <div className="flex items-center gap-3">
                 <Button
@@ -120,43 +169,15 @@ export default function SettingsPage() {
                   <CardTitle className="flex items-center gap-2 text-base text-[#1A3A5C]">
                     <CalendarDays className="h-4 w-4" /> Google Calendar
                   </CardTitle>
-                  <span className="rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-700">
-                    Non connecté
+                  <span className="rounded-full bg-[#C8952A]/15 px-2.5 py-0.5 text-xs font-medium text-[#C8952A]">
+                    Bientôt disponible
                   </span>
                 </div>
               </CardHeader>
               <CardContent>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button variant="outline" className="w-fit">
-                      Connecter
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>Sera disponible bientôt</TooltipContent>
-                </Tooltip>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle className="flex items-center gap-2 text-base text-[#1A3A5C]">
-                    <Mail className="h-4 w-4" /> Gmail
-                  </CardTitle>
-                  <span className="rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-700">
-                    Non connecté
-                  </span>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button variant="outline" className="w-fit">
-                      Connecter
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>Sera disponible bientôt</TooltipContent>
-                </Tooltip>
+                <p className="text-sm text-muted-foreground">
+                  Cette intégration n&apos;est pas encore disponible.
+                </p>
               </CardContent>
             </Card>
           </div>

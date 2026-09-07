@@ -14,12 +14,11 @@ export default function OnboardingPage() {
   const router = useRouter()
   const { updateGoals, isSaving } = useGoals()
   const [step, setStep] = useState(1)
-  const [monthlyGoal, setMonthlyGoal] = useState("25000")
   const [annualGoal, setAnnualGoal] = useState("220000")
 
   function finish() {
     updateGoals(
-      { monthlyGoal: Number(monthlyGoal), annualGoal: Number(annualGoal) },
+      { annualGoal: Number(annualGoal) },
       {
         onSettled: () => {
           localStorage.setItem("centrai_onboarding_done", "true")
@@ -51,16 +50,7 @@ export default function OnboardingPage() {
 
           {step === 2 && (
             <div className="flex flex-col gap-4">
-              <h2 className="text-lg font-bold text-[#1A3A5C]">Définis tes objectifs</h2>
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="monthlyGoal">Objectif mensuel ($)</Label>
-                <Input
-                  id="monthlyGoal"
-                  type="number"
-                  value={monthlyGoal}
-                  onChange={(e) => setMonthlyGoal(e.target.value)}
-                />
-              </div>
+              <h2 className="text-lg font-bold text-[#1A3A5C]">Définis ton objectif</h2>
               <div className="flex flex-col gap-2">
                 <Label htmlFor="annualGoal">Objectif annuel ($)</Label>
                 <Input
@@ -69,6 +59,9 @@ export default function OnboardingPage() {
                   value={annualGoal}
                   onChange={(e) => setAnnualGoal(e.target.value)}
                 />
+                <p className="text-xs text-muted-foreground">
+                  L&apos;objectif mensuel sera calculé automatiquement (annuel ÷ 12).
+                </p>
               </div>
               <Button onClick={() => setStep(3)} className="mt-2 bg-[#1A3A5C] hover:bg-[#142d47]">
                 Continuer

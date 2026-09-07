@@ -17,7 +17,7 @@ const groups: NavGroup[] = [
   { key: "contacts", label: "Contacts", icon: Users, href: "/leads", matches: ["/leads", "/clients"] },
   { key: "properties", label: "Propriétés", icon: Building2, href: "/properties", matches: ["/properties", "/commissions"] },
   { key: "assistant", label: "Assistant", icon: Bot, href: "/assistant", matches: ["/assistant"] },
-  { key: "agenda", label: "Agenda", icon: Calendar, href: "/calendar", matches: ["/calendar", "/emails"] },
+  { key: "agenda", label: "Agenda", icon: Calendar, href: "/calendar", matches: ["/calendar"] },
   { key: "settings", label: "Réglages", icon: Settings, href: "/settings", matches: ["/settings"] },
 ]
 

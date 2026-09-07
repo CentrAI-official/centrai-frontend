@@ -13,13 +13,13 @@ interface KPICardProps {
 
 export function KPICard({ title, value, subtitle, trend, icon: Icon, color }: KPICardProps) {
   return (
-    <Card>
-      <CardContent className="flex flex-col gap-2">
+    <Card size="sm">
+      <CardContent className="flex flex-col gap-1.5">
         <div className="flex items-center justify-between">
           <span className="text-sm font-medium text-muted-foreground">{title}</span>
           {Icon && (
             <div
-              className="flex h-9 w-9 items-center justify-center rounded-md"
+              className="flex h-8 w-8 items-center justify-center rounded-md"
               style={{ backgroundColor: `${color ?? "#1A3A5C"}1A` }}
             >
               <Icon className="h-4 w-4" style={{ color: color ?? "#1A3A5C" }} />

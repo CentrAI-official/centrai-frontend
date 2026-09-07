@@ -1,9 +1,9 @@
 "use client"
 
 import Link from "next/link"
-import { format, differenceInHours, isSameDay } from "date-fns"
+import { format, differenceInHours } from "date-fns"
 import { fr } from "date-fns/locale"
-import { DollarSign, Users, CalendarClock, Clock3, Sparkles, MapPin } from "lucide-react"
+import { DollarSign, Users, CalendarClock, Clock3, MapPin } from "lucide-react"
 import { PageHeader } from "@/components/ui/PageHeader"
 import { KPICard } from "@/components/ui/KPICard"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -27,9 +27,19 @@ export default function DashboardPage() {
   const staleLeads = (leads ?? []).filter(
     (lead) => differenceInHours(new Date(), new Date(lead.lastContact)) >= 24
   )
-  const todayAppointments = (appointments ?? []).filter((apt) =>
-    isSameDay(parseLocalDate(apt.date), new Date())
-  )
+
+  function toDateTime(apt: { date: string; time: string }) {
+    const dt = parseLocalDate(apt.date)
+    const [hours, minutes] = apt.time.split(":").map(Number)
+    dt.setHours(hours || 0, minutes || 0, 0, 0)
+    return dt
+  }
+
+  const now = new Date()
+  const upcomingAppointments = (appointments ?? [])
+    .filter((apt) => toDateTime(apt) >= now)
+    .sort((a, b) => toDateTime(a).getTime() - toDateTime(b).getTime())
+    .slice(0, 3)
 
   return (
     <div>
@@ -72,7 +82,7 @@ export default function DashboardPage() {
         )}
       </div>
 
-      <Card className="mt-6">
+      <Card size="sm" className="mt-4">
         <CardHeader>
           <CardTitle className="text-base text-[#1A3A5C]">Objectif mensuel</CardTitle>
         </CardHeader>
@@ -88,107 +98,92 @@ export default function DashboardPage() {
         </CardContent>
       </Card>
 
-      <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <Card>
+      <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2 lg:items-stretch">
+        <Card size="sm" className="flex flex-col lg:h-[260px]">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base text-[#1A3A5C]">
-              <Sparkles className="h-4 w-4 text-[#C8952A]" />
-              Résumé IA de ta journée
-            </CardTitle>
+            <CardTitle className="text-base text-[#1A3A5C]">Prochains rendez-vous</CardTitle>
           </CardHeader>
-          <CardContent>
-            {summaryLoading ? (
-              <Skeleton className="h-24 w-full" />
-            ) : (
-              <p className="text-sm leading-relaxed text-foreground/80">{summary?.aiSummary}</p>
-            )}
-            <Button asChild className="mt-4 bg-[#1A3A5C] hover:bg-[#142d47]">
-              <Link href="/assistant">Discuter avec l&apos;assistant</Link>
-            </Button>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base text-[#1A3A5C]">RDV du jour</CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-3">
+          <CardContent className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto">
             {appointmentsLoading ? (
-              Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-16 w-full" />)
-            ) : todayAppointments.length === 0 ? (
+              Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-14 w-full" />)
+            ) : upcomingAppointments.length === 0 ? (
               <p className="text-sm text-muted-foreground">Aucun rendez-vous à venir.</p>
             ) : (
-              todayAppointments.map((apt) => (
-                <div key={apt.id} className="flex items-start gap-3 rounded-md border border-border p-3">
-                  <span className="shrink-0 rounded-md bg-[#1A3A5C]/10 px-2 py-1 text-xs font-semibold text-[#1A3A5C]">
-                    {apt.time}
+              upcomingAppointments.map((apt) => (
+                <div key={apt.id} className="flex items-start gap-2 rounded-md border border-border p-2">
+                  <span className="flex shrink-0 flex-col items-center rounded-md bg-[#1A3A5C]/10 px-2 py-1 text-xs font-semibold text-[#1A3A5C]">
+                    <span>{format(parseLocalDate(apt.date), "d MMM", { locale: fr })}</span>
+                    <span>{apt.time}</span>
                   </span>
                   <div className="flex flex-col">
                     <span className="text-sm font-medium text-[#1A3A5C]">{apt.title}</span>
                     <span className="text-xs text-muted-foreground">{apt.clientName}</span>
-                    <span className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
+                    <span className="flex items-center gap-1 text-xs text-muted-foreground">
                       <MapPin className="h-3 w-3" /> {apt.address}
                     </span>
                   </div>
                 </div>
               ))
             )}
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base text-[#1A3A5C]">Leads chauds</CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-3">
-            {leadsLoading ? (
-              Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-12 w-full" />)
-            ) : (
-              hotLeads.map((lead) => (
-                <Link
-                  key={lead.id}
-                  href={`/leads/${lead.id}`}
-                  className="flex items-center justify-between rounded-md border border-border p-3 transition-colors hover:bg-muted"
-                >
-                  <div>
-                    <p className="text-sm font-medium text-[#1A3A5C]">{lead.name}</p>
-                    <p className="text-xs text-muted-foreground">{lead.interest}</p>
-                  </div>
-                  <StatusBadge status={lead.status} />
-                </Link>
-              ))
-            )}
+            <Button asChild variant="outline" size="sm" className="mt-auto w-fit">
+              <Link href="/calendar">Voir le calendrier</Link>
+            </Button>
           </CardContent>
         </Card>
 
-        <Card className="border-red-200 bg-red-50/60">
-          <CardHeader>
-            <CardTitle className="text-base text-[#1A3A5C]">Sans réponse depuis 24h</CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-3">
-            {leadsLoading ? (
-              Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-12 w-full" />)
-            ) : staleLeads.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Aucune relance en retard. Bravo!</p>
-            ) : (
-              staleLeads.map((lead) => (
-                <Link
-                  key={lead.id}
-                  href={`/leads/${lead.id}`}
-                  className="flex items-center justify-between rounded-md border border-red-200 bg-white p-3 transition-colors hover:bg-red-50"
-                >
-                  <div>
-                    <p className="text-sm font-medium text-[#1A3A5C]">{lead.name}</p>
-                    <p className="text-xs text-muted-foreground">{lead.interest}</p>
-                  </div>
-                  <StatusBadge status={lead.status} />
-                </Link>
-              ))
-            )}
-          </CardContent>
-        </Card>
+        <div className="flex flex-col gap-4 lg:h-[260px]">
+          <Card size="sm" className="flex flex-1 flex-col">
+            <CardHeader>
+              <CardTitle className="text-base text-[#1A3A5C]">Leads chauds</CardTitle>
+            </CardHeader>
+            <CardContent className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto">
+              {leadsLoading ? (
+                Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-10 w-full" />)
+              ) : (
+                hotLeads.map((lead) => (
+                  <Link
+                    key={lead.id}
+                    href={`/leads/${lead.id}`}
+                    className="flex items-center justify-between rounded-md border border-border p-2 transition-colors hover:bg-muted"
+                  >
+                    <div>
+                      <p className="text-sm font-medium text-[#1A3A5C]">{lead.name}</p>
+                      <p className="text-xs text-muted-foreground">{lead.interest}</p>
+                    </div>
+                    <StatusBadge status={lead.status} />
+                  </Link>
+                ))
+              )}
+            </CardContent>
+          </Card>
+
+          <Card size="sm" className="flex flex-1 flex-col border-red-200 bg-red-50/60">
+            <CardHeader>
+              <CardTitle className="text-base text-[#1A3A5C]">Sans réponse depuis 24h</CardTitle>
+            </CardHeader>
+            <CardContent className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto">
+              {leadsLoading ? (
+                Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-10 w-full" />)
+              ) : staleLeads.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Aucune relance en retard. Bravo!</p>
+              ) : (
+                staleLeads.map((lead) => (
+                  <Link
+                    key={lead.id}
+                    href={`/leads/${lead.id}`}
+                    className="flex items-center justify-between rounded-md border border-red-200 bg-white p-2 transition-colors hover:bg-red-50"
+                  >
+                    <div>
+                      <p className="text-sm font-medium text-[#1A3A5C]">{lead.name}</p>
+                      <p className="text-xs text-muted-foreground">{lead.interest}</p>
+                    </div>
+                    <StatusBadge status={lead.status} />
+                  </Link>
+                ))
+              )}
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   )

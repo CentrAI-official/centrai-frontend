@@ -29,9 +29,9 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { useCommissions, useMarkCommissionPaid } from "@/hooks/useCommissions"
+import { useGoals } from "@/hooks/useGoals"
 import { formatCurrency, parseLocalDate } from "@/lib/utils"
 
-const ANNUAL_GOAL = 220000
 const monthLabels = [
   "Jan", "Fév", "Mar", "Avr", "Mai", "Jun",
   "Jul", "Aoû", "Sep", "Oct", "Nov", "Déc",
@@ -39,8 +39,10 @@ const monthLabels = [
 
 export default function CommissionsPage() {
   const { data: commissions, isLoading } = useCommissions()
+  const { data: goals } = useGoals()
   const markPaid = useMarkCommissionPaid()
   const now = new Date()
+  const annualGoal = goals?.annualGoal ?? 0
 
   // Seules les commissions "payees" (vente conclue et confirmee) comptent dans les totaux
   // et le graphique -- une commission "en attente" n'est pas encore acquise.
@@ -71,7 +73,7 @@ export default function CommissionsPage() {
     }
   }, [commissions, now])
 
-  const annualProgress = Math.min(100, Math.round((thisYearTotal / ANNUAL_GOAL) * 100))
+  const annualProgress = annualGoal > 0 ? Math.min(100, Math.round((thisYearTotal / annualGoal) * 100)) : 0
 
   return (
     <div>
@@ -92,7 +94,7 @@ export default function CommissionsPage() {
                     <Target className="h-4 w-4 text-[#1A3A5C]" />
                   </div>
                 </div>
-                <span className="text-2xl font-bold text-[#1A3A5C]">{formatCurrency(ANNUAL_GOAL)}</span>
+                <span className="text-2xl font-bold text-[#1A3A5C]">{formatCurrency(annualGoal)}</span>
                 <Progress value={annualProgress} className="mt-1 h-2 [&>div]:bg-[#C8952A]" />
                 <span className="text-xs text-muted-foreground">{annualProgress}% atteint</span>
               </CardContent>

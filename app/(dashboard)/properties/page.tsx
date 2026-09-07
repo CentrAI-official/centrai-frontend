@@ -172,11 +172,15 @@ export default function PropertiesPage() {
               </span>
             )}
           </div>
-          {property.commissionPercent != null && (
+          {property.commissionPercent != null ? (
             <span className="flex items-center gap-1 text-xs font-medium text-[#C8952A]">
               <Percent className="h-3.5 w-3.5" /> {property.commissionPercent}% de commission
             </span>
-          )}
+          ) : property.status !== "active" ? (
+            <span className="flex items-center gap-1 text-xs font-medium text-red-600">
+              <Percent className="h-3.5 w-3.5" /> Aucune commission : % manquant
+            </span>
+          ) : null}
           {property.url && (
             <a
               href={property.url}
@@ -325,11 +329,14 @@ export default function PropertiesPage() {
                 />
               </div>
               <div className="flex flex-col gap-2">
-                <Label htmlFor="commissionPercent">Commission (%)</Label>
+                <Label htmlFor="commissionPercent">
+                  Commission (%){form.status !== "active" && " *"}
+                </Label>
                 <Input
                   id="commissionPercent"
                   type="number"
                   step="0.1"
+                  required={form.status !== "active"}
                   value={form.commissionPercent}
                   onChange={(e) => setForm({ ...form, commissionPercent: e.target.value })}
                 />
@@ -350,6 +357,11 @@ export default function PropertiesPage() {
                   <SelectItem value="sold">Vendue</SelectItem>
                 </SelectContent>
               </Select>
+              {form.status !== "active" && (
+                <p className="text-xs text-muted-foreground">
+                  Le % de commission est requis pour qu&apos;une transaction apparaisse dans Commissions.
+                </p>
+              )}
             </div>
 
             {!editingId && (

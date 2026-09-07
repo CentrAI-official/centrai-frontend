@@ -8,8 +8,8 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useAssistant } from "@/hooks/useAssistant"
-import { mockDashboardSummary } from "@/lib/mocks"
-import { cn } from "@/lib/utils"
+import { useDashboard } from "@/hooks/useDashboard"
+import { cn, formatCurrency } from "@/lib/utils"
 
 interface ChatMessage {
   id: string
@@ -35,7 +35,12 @@ export default function AssistantPage() {
   ])
   const [input, setInput] = useState("")
   const { mutate, isPending } = useAssistant()
+  const { data: summary } = useDashboard()
   const scrollRef = useRef<HTMLDivElement>(null)
+
+  const aiSummary = summary
+    ? `Bonjour! Tu as ${summary.activeLeads} lead(s) actif(s), dont ${summary.hotLeadsCount} chaud(s), et ${summary.appointmentsToday} rendez-vous aujourd'hui. Tu es à ${summary.monthlyProgress}% de ton objectif mensuel (${formatCurrency(summary.commissionsThisMonth)} sur ${formatCurrency(summary.monthlyGoal)}).`
+    : "Chargement de ton résumé..."
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" })
@@ -66,12 +71,20 @@ export default function AssistantPage() {
 
   return (
     <div>
-      <PageHeader title="Assistant IA" subtitle="Ton copilote pour la journée" />
+      <PageHeader
+        title="Assistant IA"
+        subtitle="Ton copilote pour la journée"
+        action={
+          <span className="w-fit rounded-full bg-[#1A3A5C]/10 px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide text-[#1A3A5C]">
+            Bêta
+          </span>
+        }
+      />
 
       <Card className="mb-6 border-blue-200 bg-blue-50/60">
         <CardContent className="flex items-start gap-3">
           <Sparkles className="mt-0.5 h-5 w-5 shrink-0 text-[#1A3A5C]" />
-          <p className="text-sm text-foreground/80">{mockDashboardSummary.aiSummary}</p>
+          <p className="text-sm text-foreground/80">{aiSummary}</p>
         </CardContent>
       </Card>
 
