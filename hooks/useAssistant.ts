@@ -1,6 +1,11 @@
 import { useMutation } from "@tanstack/react-query"
 import { apiClient } from "@/lib/api"
 
+export interface HistoryMessage {
+  role: "user" | "assistant"
+  content: string
+}
+
 const mockReplies = [
   "D'après tes données, Jean-François Tremblay est ton lead le plus prometteur cette semaine — il a confirmé une visite jeudi.",
   "Tu as 5 leads sans réponse depuis plus de 24h. Je te suggère de commencer par Isabelle Pelletier, qui attend des photos.",

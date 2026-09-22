@@ -2,8 +2,6 @@
 
 import { useEffect, useRef, useState } from "react"
 
-let _history: { role: "user" | "assistant"; content: string }[] = []
-
 import { Bot, Send, Sparkles } from "lucide-react"
 import { PageHeader } from "@/components/ui/PageHeader"
 import { Card, CardContent } from "@/components/ui/card"
@@ -223,20 +221,14 @@ export default function AssistantPage() {
 
   function sendMessage(content: string) {
     if (!content.trim()) return
-    const history = [..._history]
-    _history = [..._history, { role: "user" as const, content }]
     const userMessage: ChatMessage = { id: crypto.randomUUID(), role: "user", content }
     setMessages((prev) => [...prev, userMessage])
     setInput("")
-    mutate(
-      { message: content, history },
-      {
-        onSuccess: (reply) => {
-          _history = [..._history, { role: "assistant" as const, content: reply }]
-          setMessages((cur) => [...cur, { id: crypto.randomUUID(), role: "assistant", content: reply }])
-        },
-      }
-    )
+    mutate(content, {
+      onSuccess: (reply) => {
+        setMessages((cur) => [...cur, { id: crypto.randomUUID(), role: "assistant", content: reply }])
+      },
+    })
   }
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
