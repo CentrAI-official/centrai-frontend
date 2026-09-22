@@ -120,52 +120,8 @@ export default function AssistantPage() {
     window.speechSynthesis?.cancel()
   }
 
-  async function startRecording(stream: MediaStream) {
+  function startRecording(stream: MediaStream) {
     chunksRef.current = []
-
-    // Silence detection via AudioContext
-    let audioCtx: AudioContext | null = null
-    let checkSilence: ReturnType<typeof setInterval> | null = null
-
-    try {
-      audioCtx = new AudioContext()
-      await audioCtx.resume()
-      const analyser = audioCtx.createAnalyser()
-      analyser.fftSize = 512
-      const source = audioCtx.createMediaStreamSource(stream)
-      source.connect(analyser)
-      analyserRef.current = analyser
-      const data = new Uint8Array(analyser.frequencyBinCount)
-
-      // Calibrate ambient noise level for 500ms first
-      await new Promise((r) => setTimeout(r, 500))
-      analyser.getByteFrequencyData(data)
-      const ambient = data.reduce((a, b) => a + b, 0) / data.length
-      const THRESHOLD = Math.max(ambient * 1.5, 10)
-
-      let lastSoundAt = Date.now()
-      const SILENCE_MS = 2000
-      const startedAt = Date.now()
-
-      checkSilence = setInterval(() => {
-        if (!activeRef.current) { if (checkSilence) clearInterval(checkSilence); return }
-        analyser.getByteFrequencyData(data)
-        const vol = data.reduce((a, b) => a + b, 0) / data.length
-        if (vol > THRESHOLD) lastSoundAt = Date.now()
-        const elapsed = Date.now() - startedAt
-        const silent = Date.now() - lastSoundAt > SILENCE_MS
-        // Stop after silence OR max 15 seconds
-        if ((silent && elapsed > 1500) || elapsed > 15000) {
-          if (checkSilence) clearInterval(checkSilence)
-          mediaRecorderRef.current?.stop()
-        }
-      }, 100)
-    } catch {
-      // AudioContext not supported — fall back to max 10s recording
-      silenceTimerRef.current = setTimeout(() => {
-        mediaRecorderRef.current?.stop()
-      }, 10000)
-    }
 
     // Pick best supported format
     const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
@@ -177,7 +133,7 @@ export default function AssistantPage() {
     const recorder = new MediaRecorder(stream, { mimeType })
     recorder.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data) }
     recorder.onstop = () => {
-      if (checkSilence) clearInterval(checkSilence)
+      if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current)
       if (!activeRef.current) return
       const blob = new Blob(chunksRef.current, { type: mimeType })
       sendAudio(blob, mimeType)
@@ -186,6 +142,13 @@ export default function AssistantPage() {
     recorder.start()
     mediaRecorderRef.current = recorder
     setVoiceStatus("listening")
+
+    // Max 12 seconds hard stop
+    silenceTimerRef.current = setTimeout(() => {
+      if (mediaRecorderRef.current?.state === "recording") {
+        mediaRecorderRef.current.stop()
+      }
+    }, 12000)
   }
 
   async function sendAudio(blob: Blob, mimeType: string) {
