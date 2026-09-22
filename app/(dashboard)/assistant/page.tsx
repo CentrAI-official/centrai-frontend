@@ -124,27 +124,48 @@ export default function AssistantPage() {
     chunksRef.current = []
 
     // Silence detection via AudioContext
-    const audioCtx = new AudioContext()
-    const analyser = audioCtx.createAnalyser()
-    analyser.fftSize = 512
-    const source = audioCtx.createMediaStreamSource(stream)
-    source.connect(analyser)
-    analyserRef.current = analyser
-    const data = new Uint8Array(analyser.frequencyBinCount)
+    let audioCtx: AudioContext | null = null
+    let checkSilence: ReturnType<typeof setInterval> | null = null
 
-    let lastSoundAt = Date.now()
-    const SILENCE_MS = 1800
+    try {
+      audioCtx = new AudioContext()
+      await audioCtx.resume()
+      const analyser = audioCtx.createAnalyser()
+      analyser.fftSize = 512
+      const source = audioCtx.createMediaStreamSource(stream)
+      source.connect(analyser)
+      analyserRef.current = analyser
+      const data = new Uint8Array(analyser.frequencyBinCount)
 
-    const checkSilence = setInterval(() => {
-      if (!activeRef.current) { clearInterval(checkSilence); return }
+      // Calibrate ambient noise level for 500ms first
+      await new Promise((r) => setTimeout(r, 500))
       analyser.getByteFrequencyData(data)
-      const vol = data.reduce((a, b) => a + b, 0) / data.length
-      if (vol > 8) lastSoundAt = Date.now()
-      else if (Date.now() - lastSoundAt > SILENCE_MS) {
-        clearInterval(checkSilence)
+      const ambient = data.reduce((a, b) => a + b, 0) / data.length
+      const THRESHOLD = Math.max(ambient * 1.5, 10)
+
+      let lastSoundAt = Date.now()
+      const SILENCE_MS = 2000
+      const startedAt = Date.now()
+
+      checkSilence = setInterval(() => {
+        if (!activeRef.current) { if (checkSilence) clearInterval(checkSilence); return }
+        analyser.getByteFrequencyData(data)
+        const vol = data.reduce((a, b) => a + b, 0) / data.length
+        if (vol > THRESHOLD) lastSoundAt = Date.now()
+        const elapsed = Date.now() - startedAt
+        const silent = Date.now() - lastSoundAt > SILENCE_MS
+        // Stop after silence OR max 15 seconds
+        if ((silent && elapsed > 1500) || elapsed > 15000) {
+          if (checkSilence) clearInterval(checkSilence)
+          mediaRecorderRef.current?.stop()
+        }
+      }, 100)
+    } catch {
+      // AudioContext not supported — fall back to max 10s recording
+      silenceTimerRef.current = setTimeout(() => {
         mediaRecorderRef.current?.stop()
-      }
-    }, 100)
+      }, 10000)
+    }
 
     // Pick best supported format
     const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
@@ -156,7 +177,7 @@ export default function AssistantPage() {
     const recorder = new MediaRecorder(stream, { mimeType })
     recorder.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data) }
     recorder.onstop = () => {
-      clearInterval(checkSilence)
+      if (checkSilence) clearInterval(checkSilence)
       if (!activeRef.current) return
       const blob = new Blob(chunksRef.current, { type: mimeType })
       sendAudio(blob, mimeType)
@@ -324,6 +345,15 @@ export default function AssistantPage() {
               </button>
             </div>
             <p className="text-xs text-muted-foreground">{voiceLabel}</p>
+            {voiceStatus === "listening" && (
+              <button
+                type="button"
+                onClick={() => mediaRecorderRef.current?.stop()}
+                className="rounded-full bg-[#1A3A5C] px-4 py-1.5 text-xs font-medium text-white"
+              >
+                J'ai fini de parler →
+              </button>
+            )}
             {voiceStatus !== "idle" && (
               <button type="button" onClick={stopVoice} className="text-xs text-red-400 underline">
                 Arrêter
