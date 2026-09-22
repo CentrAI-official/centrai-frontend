@@ -120,7 +120,7 @@ export default function AssistantPage() {
     window.speechSynthesis?.cancel()
   }
 
-  function startRecording(stream: MediaStream) {
+  async function startRecording(stream: MediaStream) {
     chunksRef.current = []
 
     // Silence detection via AudioContext
