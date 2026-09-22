@@ -59,7 +59,6 @@ export default function AssistantPage() {
   const activeRef = useRef(false)
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const streamRef = useRef<MediaStream | null>(null)
-  const analyserRef = useRef<AnalyserNode | null>(null)
   const silenceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const chunksRef = useRef<BlobPart[]>([])
   const tapTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -78,22 +77,18 @@ export default function AssistantPage() {
     }
   }, [])
 
-  // Double-click detection
+  // Un clic = start/stop enregistrement, pas de double-clic
   function handleBotClick() {
-    if (tapTimerRef.current) {
-      clearTimeout(tapTimerRef.current)
-      tapTimerRef.current = null
-      // Double click detected
-      if (voiceStatus === "idle") {
-        startVoice()
-      } else {
-        stopVoice()
-      }
-    } else {
-      tapTimerRef.current = setTimeout(() => {
-        tapTimerRef.current = null
-        // Single click: do nothing special
-      }, 400)
+    if (voiceStatus === "idle") {
+      startVoice()
+    } else if (voiceStatus === "listening") {
+      // Arrêter l'enregistrement et envoyer
+      if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current)
+      mediaRecorderRef.current?.requestData()
+      mediaRecorderRef.current?.stop()
+    } else if (voiceStatus === "speaking") {
+      // Interrompre la réponse et ré-écouter
+      window.speechSynthesis?.cancel()
     }
   }
 
@@ -111,11 +106,10 @@ export default function AssistantPage() {
   function stopVoice() {
     activeRef.current = false
     if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current)
-    mediaRecorderRef.current?.stop()
+    if (mediaRecorderRef.current?.state === "recording") mediaRecorderRef.current.stop()
     streamRef.current?.getTracks().forEach((t) => t.stop())
     streamRef.current = null
     mediaRecorderRef.current = null
-    analyserRef.current = null
     setVoiceStatus("idle")
     window.speechSynthesis?.cancel()
   }
@@ -123,7 +117,6 @@ export default function AssistantPage() {
   function startRecording(stream: MediaStream) {
     chunksRef.current = []
 
-    // Pick best supported format
     const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
       ? "audio/webm;codecs=opus"
       : MediaRecorder.isTypeSupported("audio/mp4")
@@ -133,22 +126,13 @@ export default function AssistantPage() {
     const recorder = new MediaRecorder(stream, { mimeType })
     recorder.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data) }
     recorder.onstop = () => {
-      if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current)
       if (!activeRef.current) return
       const blob = new Blob(chunksRef.current, { type: mimeType })
-      sendAudio(blob, mimeType)
+      if (blob.size > 0) sendAudio(blob, mimeType)
     }
-
-    recorder.start()
+    recorder.start(100) // collect data every 100ms
     mediaRecorderRef.current = recorder
     setVoiceStatus("listening")
-
-    // Max 12 seconds hard stop
-    silenceTimerRef.current = setTimeout(() => {
-      if (mediaRecorderRef.current?.state === "recording") {
-        mediaRecorderRef.current.stop()
-      }
-    }, 12000)
   }
 
   async function sendAudio(blob: Blob, mimeType: string) {
@@ -220,10 +204,10 @@ export default function AssistantPage() {
   }
 
   const voiceLabel = {
-    idle: "Double-clic pour parler",
-    listening: "En écoute...",
+    idle: "Appuie pour parler",
+    listening: "Appuie pour envoyer",
     processing: "Réflexion...",
-    speaking: "CentrAI parle...",
+    speaking: "Appuie pour interrompre",
   }[voiceStatus]
 
   return (
@@ -308,18 +292,9 @@ export default function AssistantPage() {
               </button>
             </div>
             <p className="text-xs text-muted-foreground">{voiceLabel}</p>
-            {voiceStatus === "listening" && (
-              <button
-                type="button"
-                onClick={() => mediaRecorderRef.current?.stop()}
-                className="rounded-full bg-[#1A3A5C] px-4 py-1.5 text-xs font-medium text-white"
-              >
-                J'ai fini de parler →
-              </button>
-            )}
             {voiceStatus !== "idle" && (
               <button type="button" onClick={stopVoice} className="text-xs text-red-400 underline">
-                Arrêter
+                Quitter le mode vocal
               </button>
             )}
           </div>
