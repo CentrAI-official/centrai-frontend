@@ -4,6 +4,10 @@ on:
   push:
     branches: [main]
 
+env:
+  VERCEL_ORG_ID: team_BmnRbTU6M6cDFX4bywIcXArj
+  VERCEL_PROJECT_ID: prj_XrV5HdqvUmgaUBpu3jUEuZ6pqDU1
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -11,7 +15,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
       - run: npm install --global vercel@latest
       - run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
       - run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
