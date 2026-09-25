@@ -167,7 +167,8 @@ export default function AssistantPage() {
       const serverMsg = axErr?.response?.data?.error
       const netMsg = axErr?.message
       const msg = serverMsg ?? (status ? `Erreur ${status}` : netMsg ?? "Erreur inconnue")
-      setMessages((prev) => [...prev, { id: crypto.randomUUID(), role: "assistant", content: `⚠️ Vocal: ${msg}` }])
+      const base = apiClient.defaults.baseURL ?? "(vide)"
+      setMessages((prev) => [...prev, { id: crypto.randomUUID(), role: "assistant", content: `⚠️ Vocal: ${msg} | URL: ${base}` }])
       setVoiceStatus("idle")
     }
   }
