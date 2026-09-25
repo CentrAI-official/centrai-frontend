@@ -137,6 +137,11 @@ export default function AssistantPage() {
 
   async function sendAudio(blob: Blob, mimeType: string) {
     if (!activeRef.current) return
+    if (blob.size < 1000) {
+      // Blob trop petit, rien à envoyer — reprendre l'écoute
+      if (activeRef.current && streamRef.current) startRecording(streamRef.current)
+      return
+    }
     setVoiceStatus("processing")
 
     try {
@@ -144,9 +149,8 @@ export default function AssistantPage() {
       const ext = mimeType.includes("mp4") ? "m4a" : mimeType.includes("ogg") ? "ogg" : "webm"
       formData.append("audio", blob, `recording.${ext}`)
 
-      const { data } = await apiClient.post("/api/assistant/voice", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      })
+      // Ne pas passer Content-Type manuellement — axios gère le boundary automatiquement
+      const { data } = await apiClient.post("/api/assistant/voice", formData)
 
       const reply: string = data.reply
       const transcript: string = data.transcript ?? ""
@@ -157,9 +161,10 @@ export default function AssistantPage() {
       setMessages((prev) => [...prev, { id: crypto.randomUUID(), role: "assistant", content: reply }])
 
       speakReply(reply)
-    } catch {
-      setVoiceStatus("listening")
-      if (activeRef.current && streamRef.current) startRecording(streamRef.current)
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? "Erreur de connexion vocale"
+      setMessages((prev) => [...prev, { id: crypto.randomUUID(), role: "assistant", content: `⚠️ ${msg}` }])
+      setVoiceStatus("idle")
     }
   }
 
