@@ -138,19 +138,24 @@ export default function AssistantPage() {
   async function sendAudio(blob: Blob, mimeType: string) {
     if (!activeRef.current) return
     if (blob.size < 1000) {
-      // Blob trop petit, rien à envoyer — reprendre l'écoute
       if (activeRef.current && streamRef.current) startRecording(streamRef.current)
       return
     }
     setVoiceStatus("processing")
 
     try {
-      const formData = new FormData()
-      const ext = mimeType.includes("mp4") ? "m4a" : mimeType.includes("ogg") ? "ogg" : "webm"
-      formData.append("audio", blob, `recording.${ext}`)
+      // Encode audio as base64 JSON (avoids multipart/FormData issues)
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onloadend = () => {
+          const result = reader.result as string
+          resolve(result.split(",")[1] ?? result)
+        }
+        reader.onerror = reject
+        reader.readAsDataURL(blob)
+      })
 
-      // Ne pas passer Content-Type manuellement — axios gère le boundary automatiquement
-      const { data } = await apiClient.post("/api/assistant/voice", formData)
+      const { data } = await apiClient.post("/api/assistant/voice", { audio: base64, mimeType })
 
       const reply: string = data.reply
       const transcript: string = data.transcript ?? ""
@@ -167,8 +172,7 @@ export default function AssistantPage() {
       const serverMsg = axErr?.response?.data?.error
       const netMsg = axErr?.message
       const msg = serverMsg ?? (status ? `Erreur ${status}` : netMsg ?? "Erreur inconnue")
-      const base = apiClient.defaults.baseURL ?? "(vide)"
-      setMessages((prev) => [...prev, { id: crypto.randomUUID(), role: "assistant", content: `⚠️ Vocal: ${msg} | URL: ${base}` }])
+      setMessages((prev) => [...prev, { id: crypto.randomUUID(), role: "assistant", content: `⚠️ Vocal: ${msg}` }])
       setVoiceStatus("idle")
     }
   }
