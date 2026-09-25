@@ -162,8 +162,12 @@ export default function AssistantPage() {
 
       speakReply(reply)
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? "Erreur de connexion vocale"
-      setMessages((prev) => [...prev, { id: crypto.randomUUID(), role: "assistant", content: `⚠️ ${msg}` }])
+      const axErr = err as { response?: { status?: number; data?: { error?: string } }; message?: string }
+      const status = axErr?.response?.status
+      const serverMsg = axErr?.response?.data?.error
+      const netMsg = axErr?.message
+      const msg = serverMsg ?? (status ? `Erreur ${status}` : netMsg ?? "Erreur inconnue")
+      setMessages((prev) => [...prev, { id: crypto.randomUUID(), role: "assistant", content: `⚠️ Vocal: ${msg}` }])
       setVoiceStatus("idle")
     }
   }
