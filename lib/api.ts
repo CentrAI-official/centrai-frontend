@@ -2,7 +2,7 @@ import axios from "axios"
 import { getToken, removeToken } from "@/lib/auth"
 
 export const apiClient = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL,
+  baseURL: process.env.NEXT_PUBLIC_API_URL ?? "https://centrai-api-production.up.railway.app",
 })
 
 apiClient.interceptors.request.use((config) => {
