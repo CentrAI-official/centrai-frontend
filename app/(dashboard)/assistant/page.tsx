@@ -93,6 +93,13 @@ export default function AssistantPage() {
   }
 
   async function startVoice() {
+    // iOS requires speechSynthesis to be triggered from a user-gesture callstack.
+    // Speak an empty utterance now (synchronously in this tap handler) to unlock audio.
+    if (typeof window !== "undefined" && window.speechSynthesis) {
+      const warmup = new SpeechSynthesisUtterance(" ")
+      window.speechSynthesis.speak(warmup)
+      window.speechSynthesis.cancel()
+    }
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
       streamRef.current = stream
@@ -183,20 +190,32 @@ export default function AssistantPage() {
     window.speechSynthesis.cancel()
 
     const utterance = new SpeechSynthesisUtterance(stripMarkdown(text))
+
+    // Pick best French voice available (fr-CA preferred, fr-FR fallback)
+    const voices = window.speechSynthesis.getVoices()
+    const frVoice = voices.find((v) => v.lang === "fr-CA")
+      ?? voices.find((v) => v.lang === "fr-FR")
+      ?? voices.find((v) => v.lang.startsWith("fr"))
+    if (frVoice) utterance.voice = frVoice
+
     utterance.lang = "fr-CA"
     utterance.rate = 1.05
 
-    utterance.onend = () => {
+    const restartListening = () => {
       if (!activeRef.current) return
-      // Restart listening after reply
-      navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
-        streamRef.current = stream
-        startRecording(stream)
-      }).catch(() => setVoiceStatus("idle"))
+      // Reuse existing stream if still open, otherwise request a new one
+      if (streamRef.current) {
+        startRecording(streamRef.current)
+      } else {
+        navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
+          streamRef.current = stream
+          startRecording(stream)
+        }).catch(() => setVoiceStatus("idle"))
+      }
     }
-    utterance.onerror = () => {
-      if (activeRef.current && streamRef.current) startRecording(streamRef.current)
-    }
+
+    utterance.onend = restartListening
+    utterance.onerror = restartListening
 
     window.speechSynthesis.speak(utterance)
   }
